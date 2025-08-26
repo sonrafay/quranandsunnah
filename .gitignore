@@ -11,21 +11,33 @@
 
 # next.js
 /.next/
+# next export
 /out/
 
 # production
 /build
+/dist
 
-# misc
+# misc / OS
 .DS_Store
+Thumbs.db
 *.pem
 
-# debug
+# debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+
+# editor / IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 
 # local env files
+.env
+.env.*
 .env*.local
 
 # vercel
@@ -34,3 +46,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# caches
+.eslintcache
+.prettiercache
+.turbo

@@ -1,9 +1,11 @@
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navigation } from "@/components/Navigation";
-import Head from "next/head";
+// Use a RELATIVE import to avoid alias hiccups
+import AmbientGlow from "../components/AmbientGlow";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -17,34 +19,38 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Shadcn landing page",
-  description: "Landing page for free and open source software",
+  title: {
+    default: "Quran & Sunnah",
+    template: "%s · Quran & Sunnah",
+  },
+  description: "One clean place for Quran, Hadith, and prayer—free for everyone.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192" },
+      { url: "/icon-512.png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    shortcut: ["/favicon.ico"],
+  },
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <Head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </Head>
-
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <Navigation />
-          {children}
+    <html lang="en" className="scroll-smooth">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          {/* Glow layer sits above the body bg, below content */}
+          <AmbientGlow />
+          <div className="relative z-10">
+            <Navigation />
+            {children}
+          </div>
         </ThemeProvider>
       </body>
     </html>
