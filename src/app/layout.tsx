@@ -1,10 +1,10 @@
 // src/app/layout.tsx
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navigation } from "@/components/Navigation";
-// Use a RELATIVE import to avoid alias hiccups
+import AuthProvider from "@/components/auth/AuthProvider";
 import AmbientGlow from "../components/AmbientGlow";
 
 const geistSans = localFont({
@@ -23,7 +23,8 @@ export const metadata: Metadata = {
     default: "Quran & Sunnah",
     template: "%s · Quran & Sunnah",
   },
-  description: "One clean place for Quran, Hadith, and prayer—free for everyone.",
+  description:
+    "One clean place for Quran, Hadith, and prayer—free for everyone.",
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -34,6 +35,9 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
     shortcut: ["/favicon.ico"],
   },
+};
+
+export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },
@@ -45,12 +49,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="scroll-smooth">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          {/* Glow layer sits above the body bg, below content */}
-          <AmbientGlow />
-          <div className="relative z-10">
-            <Navigation />
-            {children}
-          </div>
+          <AuthProvider>
+            {/* Glow layer sits above the body bg, below content */}
+            <AmbientGlow />
+            <div className="relative z-10">
+              <Navigation />
+              {children}
+            </div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

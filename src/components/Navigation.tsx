@@ -30,11 +30,16 @@ const appLinks: LinkDef[] = [
 ];
 
 export function Navigation() {
-  const pathname = usePathname();
+  const pathname = usePathname() || "/";
+  const isLanding = pathname === "/";
   const isApp =
-    (pathname?.startsWith("/quran") ?? false) ||
-    (pathname?.startsWith("/hadith") ?? false) ||
-    (pathname?.startsWith("/prayer") ?? false);
+    pathname.startsWith("/quran") ||
+    pathname.startsWith("/hadith") ||
+    pathname.startsWith("/prayer");
+  const isUtility =
+    pathname.startsWith("/search") ||
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/account");
 
   const links = isApp ? appLinks : landingLinks;
 
@@ -52,34 +57,40 @@ export function Navigation() {
           </Link>
         </div>
 
-        {/* centered island */}
+        {/* centered island (HIDDEN on utility pages) */}
         <div className="flex items-center justify-center">
-          <NavigationMenu>
-            <NavigationMenuList className="whitespace-nowrap bg-gradient-to-r from-foreground/5 via-foreground/10 to-foreground/5 backdrop-blur-md px-5 py-2 rounded-full border border-foreground/10">
-              {links.map(({ href, label, icon: Icon }) => {
-                const active = pathname === href || pathname?.startsWith(href + "/");
-                return (
-                  <NavigationMenuItem key={href} className="px-2 sm:px-3">
-                    <NavigationMenuLink
-                      href={href}
-                      className={cn(
-                        "flex items-center gap-2 text-sm transition-colors whitespace-nowrap",
-                        active ? "text-foreground" : "text-foreground/80 hover:text-foreground"
-                      )}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span>{label}</span>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                );
-              })}
-            </NavigationMenuList>
-          </NavigationMenu>
+          {!isUtility && (
+            <NavigationMenu>
+              <NavigationMenuList className="whitespace-nowrap bg-gradient-to-r from-foreground/5 via-foreground/10 to-foreground/5 backdrop-blur-md px-5 py-2 rounded-full border border-foreground/10">
+                {links.map(({ href, label, icon: Icon }) => {
+                  const active = pathname === href || pathname.startsWith(href + "/");
+                  return (
+                    <NavigationMenuItem key={href} className="px-2 sm:px-3">
+                      <NavigationMenuLink
+                        href={href}
+                        className={cn(
+                          "flex items-center gap-2 text-sm transition-colors whitespace-nowrap",
+                          active ? "text-foreground" : "text-foreground/80 hover:text-foreground"
+                        )}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{label}</span>
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+                  );
+                })}
+              </NavigationMenuList>
+            </NavigationMenu>
+          )}
         </div>
 
         {/* right controls */}
         <div className="flex items-center justify-end gap-2">
-          {isApp ? (
+          {isLanding ? (
+            <Button asChild size="sm">
+              <Link href="/quran">Open App</Link>
+            </Button>
+          ) : (
             <>
               <Link
                 href="/search"
@@ -94,6 +105,12 @@ export function Navigation() {
                 className="rounded-full border bg-background/60 backdrop-blur px-3 py-1.5 text-sm hover:bg-muted transition flex items-center gap-2"
                 title="Settings"
               >
+                <User className="hidden" /> {/* spacer to keep imports tidy */}
+                <span className="sr-only">spacer</span>
+                <span className="sr-only">.</span>
+                <span />
+                <svg className="hidden" />
+                {/* actual button */}
                 <Gear className="h-4 w-4" />
                 <span>Settings</span>
               </Link>
@@ -106,10 +123,6 @@ export function Navigation() {
                 <span>Account</span>
               </Link>
             </>
-          ) : (
-            <Button asChild size="sm">
-              <Link href="/quran">Open App</Link>
-            </Button>
           )}
           <ModeToggle />
         </div>
