@@ -2,32 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------- Base ---------- */
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-}
 
-::selection {
-  background-color: rgb(4, 47, 46);
-  color: rgb(45, 212, 191);
-}
+  ::selection { background-color: rgb(4 47 46); color: rgb(45 212 191); }
+  /* firefox */
+  ::-moz-selection { background-color: rgb(4 47 46); color: rgb(45 212 191); }
 
-/* firefox */
-::-moz-selection {
-  background-color: rgb(4, 47, 46);
-  color: rgb(45, 212, 191);
-}
+  html { scroll-behavior: smooth; }
 
-html {
-  scroll-behavior: smooth;
-}
-
-@layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
@@ -90,3 +78,45 @@ html {
     --ring: 0 0% 100%;
   }
 }
+
+/* ---------- Quran font (optional; requires files in /public/fonts) ---------- */
+
+@font-face {
+  font-family: "KFGQPC Uthmanic Script";
+  src: url("/fonts/KFGQPC-Uthmanic-Script-V1.woff2") format("woff2"),
+       url("/fonts/KFGQPC-Uthmanic-Script-V1.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+.font-quran {
+  font-family: "KFGQPC Uthmanic Script", var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* ---------- Utilities ---------- */
+@layer utilities {
+  /* Bright ring + subtle fill so it stands out on dark and light */
+  [data-active-ayah="1"] {
+    @apply ring-2 ring-emerald-400/80 ring-offset-2 ring-offset-background;
+    @apply bg-emerald-500/5;
+    transition: background 120ms linear, box-shadow 120ms linear, outline-color 120ms linear;
+  }
+
+  /* If you also want a gentle glow on dark themes */
+  .dark [data-active-ayah="1"] {
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25), 0 8px 24px rgba(16, 185, 129, 0.12);
+  }
+}
+
+@layer utilities {
+  /* visible highlight even on dark surfaces */
+  .active-ayah,
+  [data-active-ayah="1"] {
+    outline: 2px solid hsl(160 84% 39% / 0.9);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px hsl(160 84% 39% / 0.25), 0 8px 24px hsl(160 84% 39% / 0.12);
+    background: color-mix(in oklab, transparent 90%, #10b981 10%);
+    transition: background 120ms linear, box-shadow 120ms linear, outline-color 120ms linear;
+  }
+}
+
