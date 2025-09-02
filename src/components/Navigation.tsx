@@ -11,6 +11,7 @@ import { ModeToggle } from "./ModeToggle";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 type LinkDef = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
@@ -43,10 +44,41 @@ export function Navigation() {
 
   const links = isApp ? appLinks : landingLinks;
 
+  // Hide on scroll (only for app pages)
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(0);
+  const ticking = useRef(false);
+
+  useEffect(() => {
+    if (!isApp) { setHidden(false); return; }
+    function onScroll() {
+      if (ticking.current) return;
+      ticking.current = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const dy = y - lastY.current;
+        if (y < 8) setHidden(false);
+        else {
+          if (dy > 4) setHidden(true);      // down -> hide
+          else if (dy < -4) setHidden(false); // up -> show
+        }
+        lastY.current = y;
+        ticking.current = false;
+      });
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isApp]);
+
   return (
-    <nav className="fixed w-full top-0 z-50 px-4 py-3">
+    <nav
+      className={cn(
+        "fixed w-full top-0 z-50 px-4 py-3 transition-transform duration-300 will-change-transform",
+        isApp && hidden ? "-translate-y-full" : "translate-y-0"
+      )}
+    >
       <div className="max-w-7xl mx-auto grid grid-cols-3 items-center">
-        {/* brand */}
+        {/* Brand (left) */}
         <div className="flex items-center">
           <Link
             href={isApp ? "/quran" : "/#home"}
@@ -57,7 +89,7 @@ export function Navigation() {
           </Link>
         </div>
 
-        {/* centered island (HIDDEN on utility pages) */}
+        {/* Center island (hidden on utility pages) */}
         <div className="flex items-center justify-center">
           {!isUtility && (
             <NavigationMenu>
@@ -84,7 +116,7 @@ export function Navigation() {
           )}
         </div>
 
-        {/* right controls */}
+        {/* Right controls (Search / Settings / Account + theme) */}
         <div className="flex items-center justify-end gap-2">
           {isLanding ? (
             <Button asChild size="sm">
@@ -105,12 +137,6 @@ export function Navigation() {
                 className="rounded-full border bg-background/60 backdrop-blur px-3 py-1.5 text-sm hover:bg-muted transition flex items-center gap-2"
                 title="Settings"
               >
-                <User className="hidden" /> {/* spacer to keep imports tidy */}
-                <span className="sr-only">spacer</span>
-                <span className="sr-only">.</span>
-                <span />
-                <svg className="hidden" />
-                {/* actual button */}
                 <Gear className="h-4 w-4" />
                 <span>Settings</span>
               </Link>

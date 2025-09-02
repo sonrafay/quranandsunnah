@@ -6,6 +6,7 @@ import ReciterPicker, { Reciter } from "@/components/quran/ReciterPicker";
 import ScrollProgressBar from "@/components/ScrollProgressBar";
 import SurahFooterNav from "@/components/quran/SurahFooterNav";
 import AudioPlayerBar, { AudioItem, Segment } from "@/components/quran/AudioPlayerBar";
+import SurahTitle from "@/components/quran/SurahTitle";
 
 type QFVerse = {
   verse_number: number;
@@ -231,18 +232,8 @@ export default async function SurahPage({
 
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-28">
         {/* HEADER */}
-        <div className="relative mb-6">
-          <div className="absolute inset-x-0 -top-1 flex justify-center">
-            <span className="font-quran text-2xl md:text-3xl bg-teal-600 text-white rounded-md px-4 py-1 shadow-sm">
-              {meta.arabicName}
-            </span>
-          </div>
-          <div className="flex items-center justify-end">
-            {meta.englishNick && (
-              <span className="text-sm md:text-base text-muted-foreground">{meta.englishNick}</span>
-            )}
-          </div>
-        </div>
+        <SurahTitle id={data.chapter} arabicName={meta.arabicName} englishNick={meta.englishNick} />
+
 
         {/* Controls */}
         <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
@@ -256,28 +247,48 @@ export default async function SurahPage({
         <article
           key={v.key}
           id={`ayah-${v.n}`}
-          className="relative scroll-mt-28 md:scroll-mt-36 rounded-2xl border p-5 md:p-6 pl-12 md:pl-14 bg-background/60"
+          className="
+            relative scroll-mt-28 md:scroll-mt-36
+            rounded-2xl border bg-background/60
+            p-5 md:p-6 pl-14 md:pl-16
+            min-h-44 md:min-h-52
+            flex flex-col justify-center
+          "
         >
-              <div className="absolute left-2 top-3 md:top-4">
-                <VerseActions
-                  compact
-                  surah={data.chapter}
-                  ayah={v.n}
-                  textToCopy={[v.arabic, ...v.translations.map((t) => t.text)].filter(Boolean).join("\n")}
-                />
-              </div>
+          {/* Action icons column — vertically centered */}
+          <div className="absolute left-2 top-1/2 -translate-y-1/2">
+            <VerseActions
+              compact
+              surah={data.chapter}
+              ayah={v.n}
+              textToCopy={[v.arabic, ...v.translations.map((t) => t.text)]
+                .filter(Boolean)
+                .join('\n')}
+            />
+          </div>
 
-              <div className="font-quran text-3xl md:text-4xl leading-[2.6rem] md:leading-[3.1rem]" dir="rtl">
-                {v.arabic}
-              </div>
+          {/* Arabic */}
+          <div
+            className="font-quran text-3xl md:text-4xl leading-[2.6rem] md:leading-[3.1rem]"
+            dir="rtl"
+          >
+            {v.arabic}
+          </div>
 
-              {v.translations.map((t, i) => (
-                <div key={i} className="mt-4 text-base md:text-lg leading-relaxed text-muted-foreground" dir="ltr">
-                  {t.text}
-                  {t.source && <span className="ml-2 opacity-70">— {t.source}</span>}
-                </div>
-              ))}
-            </article>
+          {/* Translations (stacked) */}
+          {v.translations.map((t, i) => (
+            <div
+              key={i}
+              className="mt-4 text-base md:text-lg leading-relaxed text-muted-foreground"
+              dir="ltr"
+            >
+              {t.text}
+              {t.source && <span className="ml-2 opacity-70">— {t.source}</span>}
+            </div>
+          ))}
+        </article>
+
+
           ))}
         </div>
 
