@@ -1,23 +1,47 @@
 "use client";
 
-import * as React from "react";
-import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Button } from "@/components/ui/button";
+import { Moon, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
+
+/**
+ * A small helper to add a fade class to <html> for a short time,
+ * unless the user prefers reduced motion.
+ */
+function runThemeFade(ms = 320) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const root = document.documentElement as HTMLElement & { __fadeTO?: number };
+  root.classList.add("theme-fade");
+  if (root.__fadeTO) window.clearTimeout(root.__fadeTO);
+  root.__fadeTO = window.setTimeout(() => {
+    root.classList.remove("theme-fade");
+  }, ms) as unknown as number;
+}
 
 export function ModeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const isDark = (resolvedTheme ?? "dark") === "dark";
+  const next = isDark ? "light" : "dark";
+
+  function onToggle() {
+    runThemeFade();
+    setTheme(next);
+  }
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-      className="rounded-full w-10 h-10"
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
+      title={`Switch to ${isDark ? "light" : "dark"} mode`}
+      className="rounded-full border bg-background/60 backdrop-blur h-8 w-8 grid place-items-center hover:bg-muted transition"
     >
-      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-      <span className="sr-only">Toggle theme</span>
-    </Button>
+      {mounted ? (isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />) : null}
+    </button>
   );
 }
+
+export default ModeToggle;
