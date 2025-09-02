@@ -35,10 +35,13 @@ export default function AudioPlayerBar(props: Props) {
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
 
+  // highlight only after the user initiates playback/seek/prev/next
+  const [activated, setActivated] = useState(false);
+
   // timeline state
-  const [time, setTime] = useState(0);            // current position (single: native currentTime; perAyah: global)
-  const [duration, setDuration] = useState(0);    // total timeline duration (single: track; perAyah: sum of verse durations/estimates)
-  const [idx, setIdx] = useState(0);              // current verse index (for both modes)
+  const [time, setTime] = useState(0);            // current position
+  const [duration, setDuration] = useState(0);    // total timeline duration
+  const [idx, setIdx] = useState(0);              // current verse index
 
   // volume
   const [volume, setVolume] = useState<number>(() => {
@@ -52,20 +55,19 @@ export default function AudioPlayerBar(props: Props) {
   const items    = !isSingle ? (props as PerAyahProps).items : [];
   const totalOverride = isSingle ? (props as SingleProps).totalDuration : undefined;
 
-  // verse durations for per-ayah mode (we learn them lazily as metadata loads)
+  // verse durations for per-ayah mode (learn lazily as metadata loads)
   const DEFAULT_VERSE_SECONDS = 5;
   const [verseDur, setVerseDur] = useState<number[]>(
     () => (!isSingle ? Array.from({ length: items.length }, () => DEFAULT_VERSE_SECONDS) : [])
   );
   const pendingSeek = useRef<{ toIndex: number; toOffset: number } | null>(null);
 
-  // current ayah number (for highlighting)
   const currentAyah = useMemo(
     () => (isSingle ? segments[idx]?.n : items[idx]?.n),
     [isSingle, segments, items, idx]
   );
 
-  // ------- attach source -------
+  // ------- attach source (do NOT auto-show) -------
   useEffect(() => {
     const a = audioRef.current; if (!a) return;
 
@@ -73,12 +75,16 @@ export default function AudioPlayerBar(props: Props) {
       a.src = (props as SingleProps).trackUrl;
       setIdx(0);
       setTime(0);
-      setVisible(false);
-      setVerseDur([]); // not used in single mode
+      setVisible(false);  // keep hidden until user hits play from a verse
+      setVerseDur([]);    // not used in single mode
     } else {
       a.src = items[idx]?.url ?? "";
-      setVisible(true);
-      setVerseDur((prev) => prev.length === items.length ? prev : Array.from({ length: items.length }, (_, i) => prev[i] ?? DEFAULT_VERSE_SECONDS));
+      // no setVisible here — bar appears only when verse play is pressed
+      setVerseDur((prev) =>
+        prev.length === items.length
+          ? prev
+          : Array.from({ length: items.length }, (_, i) => prev[i] ?? DEFAULT_VERSE_SECONDS)
+      );
     }
   }, [isSingle, props, items, idx]);
 
@@ -89,7 +95,6 @@ export default function AudioPlayerBar(props: Props) {
     const onLoaded = () => {
       setReady(true);
 
-      // set total duration
       if (isSingle) {
         setDuration(
           (typeof totalOverride === "number" && totalOverride > 0)
@@ -97,7 +102,7 @@ export default function AudioPlayerBar(props: Props) {
             : (Number.isFinite(a.duration) ? a.duration : 0)
         );
       } else {
-        // per-ayah: update duration for current index with real metadata (we learn lazily)
+        // per-ayah: learn the real duration for this verse when available
         const d = Number.isFinite(a.duration) && a.duration > 0 ? a.duration : verseDur[idx] ?? DEFAULT_VERSE_SECONDS;
         setVerseDur((prev) => {
           const next = prev.slice();
@@ -106,7 +111,7 @@ export default function AudioPlayerBar(props: Props) {
           return next;
         });
 
-        // if a seek-to-offset is pending for this index, apply it now
+        // apply pending seek for this verse if any
         if (pendingSeek.current && pendingSeek.current.toIndex === idx) {
           a.currentTime = Math.max(0, Math.min(d - 0.05, pendingSeek.current.toOffset));
           pendingSeek.current = null;
@@ -117,10 +122,10 @@ export default function AudioPlayerBar(props: Props) {
 
     const onTime = () => {
       if (isSingle) {
-        setTime(a.currentTime || 0);
+        setTime(audioRef.current?.currentTime || 0);
       } else {
         const before = verseDur.slice(0, idx).reduce((s, v) => s + (Number.isFinite(v) ? v : DEFAULT_VERSE_SECONDS), 0);
-        setTime(before + (a.currentTime || 0));
+        setTime(before + (audioRef.current?.currentTime || 0));
       }
     };
 
@@ -155,7 +160,7 @@ export default function AudioPlayerBar(props: Props) {
     localStorage.setItem("qs-muted", muted ? "1" : "0");
   }, [volume, muted]);
 
-  // ------- highlight + auto-scroll -------
+  // ------- highlight + auto-scroll helpers -------
   function highlightAyah(n?: number) {
     if (!n) return;
     const el = document.getElementById(`ayah-${n}`) as HTMLElement | null;
@@ -174,16 +179,16 @@ export default function AudioPlayerBar(props: Props) {
     if (!inView) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
-  // single: map time -> segment; per-ayah: highlight on idx/time
+  // single: RAF loop mapping currentTime -> active segment (only after activation)
   useEffect(() => {
     if (!isSingle) return;
     const a = audioRef.current; if (!a) return;
     let prev = -1, raf = 0;
     const tick = () => {
-      if (playing) {
+      if (playing && activated) {
         const t = a.currentTime;
 
-        // binary search for active segment
+        // binary search for segment
         let lo = 0, hi = segments.length - 1, found = 0;
         while (lo <= hi) {
           const mid = (lo + hi) >> 1;
@@ -201,47 +206,55 @@ export default function AudioPlayerBar(props: Props) {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [isSingle, playing, segments]);
+  }, [isSingle, playing, activated, segments]);
 
-  // verse-audio: highlight on idx changes
+  // per-ayah: highlight when verse index changes (only after activation)
   useEffect(() => {
-    if (!isSingle) highlightAyah(currentAyah);
-  }, [isSingle, currentAyah]);
+    if (!isSingle && activated) highlightAyah(currentAyah);
+  }, [isSingle, currentAyah, activated]);
 
   // ------- play from verse (both modes) -------
   useEffect(() => {
     function handler(e: Event) {
-      const { n } = (e as CustomEvent).detail || {};
-      if (typeof n !== "number") return;
+      const d: any = (e as CustomEvent).detail || {};
+      const n: number | undefined = typeof d.n === "number" ? d.n : undefined;
+      const byIndex: number | undefined = typeof d.index === "number" ? d.index : undefined;
+
       const a = audioRef.current; if (!a) return;
 
       setVisible(true);
-      highlightAyah(n);
+      setActivated(true);
 
       if (isSingle) {
-        const k = segments.findIndex((s) => s.n === n);
+        let k = -1;
+        if (typeof n === "number") {
+          k = segments.findIndex((s) => s.n === n);
+        } else if (typeof byIndex === "number") {
+          k = Math.max(0, Math.min(segments.length - 1, byIndex));
+        }
         if (k < 0) return;
         setIdx(k);
+        highlightAyah(segments[k]?.n);
         a.currentTime = Math.max(0, segments[k].start + 0.01);
         setTimeout(() => a.play().then(() => setPlaying(true)).catch(() => {}), 20);
       } else {
-        const j = items.findIndex((it) => it.n === n);
+        let j = -1;
+        if (typeof n === "number") {
+          j = items.findIndex((it) => it.n === n);
+        } else if (typeof byIndex === "number") {
+          j = Math.max(0, Math.min(items.length - 1, byIndex));
+        }
         if (j < 0) return;
         setIdx(j);
+        highlightAyah(items[j]?.n);
         setTimeout(() => audioRef.current?.play().then(() => setPlaying(true)).catch(() => {}), 20);
       }
     }
-    (window as any).__qsPlayFromAyah = (n: number) =>
-      handler(new CustomEvent("qs-play-ayah", { detail: { n } }) as any);
-
     window.addEventListener("qs-play-ayah", handler as EventListener);
-    return () => {
-      window.removeEventListener("qs-play-ayah", handler as EventListener);
-      delete (window as any).__qsPlayFromAyah;
-    };
+    return () => window.removeEventListener("qs-play-ayah", handler as EventListener);
   }, [isSingle, segments, items]);
 
-  // ------- controls -------
+  // ------- play/pause couple -------
   useEffect(() => {
     const a = audioRef.current; if (!a) return;
     if (playing) a.play().catch(() => setPlaying(false));
@@ -251,11 +264,11 @@ export default function AudioPlayerBar(props: Props) {
   function playPause() {
     if (!ready) return;
     setPlaying((p) => !p);
-    setVisible(true);
   }
 
   function prev() {
     const a = audioRef.current; if (!a) return;
+    setActivated(true);
     if (isSingle) {
       const k = Math.max(0, idx - 1), seg = segments[k];
       if (seg) {
@@ -272,6 +285,7 @@ export default function AudioPlayerBar(props: Props) {
 
   function next() {
     const a = audioRef.current; if (!a) return;
+    setActivated(true);
     if (isSingle) {
       const k = Math.min(segments.length - 1, idx + 1), seg = segments[k];
       if (seg) {
@@ -289,12 +303,12 @@ export default function AudioPlayerBar(props: Props) {
   /** Seek on the global timeline (works in both modes). */
   function onSeekGlobal(pct: number) {
     const a = audioRef.current; if (!a) return;
+    setActivated(true);
 
     if (isSingle) {
       const total = (typeof totalOverride === "number" && totalOverride > 0) ? totalOverride : duration;
       if (!total) return;
       a.currentTime = Math.max(0, Math.min(total, total * pct));
-      setVisible(true);
       return;
     }
 
@@ -309,7 +323,6 @@ export default function AudioPlayerBar(props: Props) {
         const offset = target - acc;
         setIdx(k);
         pendingSeek.current = { toIndex: k, toOffset: offset };
-        // will be applied in onLoaded for that verse
         setTimeout(() => {
           const src = items[k]?.url ?? "";
           if (audioRef.current && audioRef.current.src !== src) {
@@ -322,7 +335,30 @@ export default function AudioPlayerBar(props: Props) {
       }
       acc += d;
     }
-    setVisible(true);
+  }
+
+  // close button: stop & unload audio, hide bar, clear highlight
+  function handleClose() {
+    const a = audioRef.current;
+    try {
+      a?.pause();
+      if (a) {
+        a.currentTime = 0;
+        // unload source to fully stop network/decoding
+        a.src = "";
+        a.removeAttribute("src");
+        a.load();
+      }
+    } catch {}
+    setPlaying(false);
+    setVisible(false);
+    setActivated(false);
+
+    // remove highlight if any
+    document.querySelectorAll<HTMLElement>("[data-active-ayah]").forEach((e) => {
+      e.removeAttribute("data-active-ayah");
+      e.classList.remove("active-ayah");
+    });
   }
 
   const label = isSingle ? `Ayah ${segments[idx]?.n ?? "—"}` : (items[idx]?.key ?? "");
@@ -334,11 +370,40 @@ export default function AudioPlayerBar(props: Props) {
   const src = isSingle ? (props as SingleProps).trackUrl : (items[idx]?.url ?? "");
 
   return (
-    <div className={["fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t transition-transform duration-200", visible ? "translate-y-0" : "translate-y-full"].join(" ")}>
+    <div
+      className={[
+        "fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t",
+        "transition-transform duration-200",
+        visible ? "translate-y-0" : "translate-y-full",
+      ].join(" ")}
+    >
       <div className="mx-auto max-w-5xl px-4 py-2 flex items-center gap-3">
-        <button className="inline-flex h-8 w-8 items-center justify-center rounded hover:bg-foreground/10" onClick={prev} aria-label="Previous verse"><SkipBack className="h-4 w-4" /></button>
-        <button className="inline-flex h-9 w-9 items-center justify-center rounded hover:bg-foreground/10" onClick={playPause} aria-label={playing ? "Pause" : "Play"}>{playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}</button>
-        <button className="inline-flex h-8 w-8 items-center justify-center rounded hover:bg-foreground/10" onClick={next} aria-label="Next verse"><SkipForward className="h-4 w-4" /></button>
+        <button
+          className="inline-flex h-8 w-8 items-center justify-center rounded hover:bg-foreground/10"
+          onClick={prev}
+          aria-label="Previous verse"
+          title="Previous verse"
+        >
+          <SkipBack className="h-4 w-4" />
+        </button>
+
+        <button
+          className="inline-flex h-9 w-9 items-center justify-center rounded hover:bg-foreground/10"
+          onClick={playPause}
+          aria-label={playing ? "Pause" : "Play"}
+          title={playing ? "Pause" : "Play"}
+        >
+          {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+        </button>
+
+        <button
+          className="inline-flex h-8 w-8 items-center justify-center rounded hover:bg-foreground/10"
+          onClick={next}
+          aria-label="Next verse"
+          title="Next verse"
+        >
+          <SkipForward className="h-4 w-4" />
+        </button>
 
         {/* global timeline */}
         <div className="flex-1 flex items-center gap-3">
@@ -349,8 +414,13 @@ export default function AudioPlayerBar(props: Props) {
               const pct = (e.clientX - rect.left) / rect.width;
               onSeekGlobal(pct);
             }}
+            aria-label="Seek"
+            title="Seek"
           >
-            <div className="absolute inset-y-0 left-0 rounded bg-foreground/60" style={{ width: `${percent * 100}%` }} />
+            <div
+              className="absolute inset-y-0 left-0 rounded bg-foreground/60"
+              style={{ width: `${percent * 100}%` }}
+            />
           </div>
           <div className="text-xs tabular-nums w-[110px] text-right">
             {fmt(time)} / {fmt(total)}
@@ -378,10 +448,19 @@ export default function AudioPlayerBar(props: Props) {
             onChange={(e) => { setMuted(false); setVolume(parseFloat(e.target.value)); }}
             className="w-24 accent-foreground"
             aria-label="Volume"
+            title="Volume"
           />
         </div>
 
-        <button className="ml-1 inline-flex h-8 px-2 text-xs rounded hover:bg-foreground/10" onClick={() => setVisible(false)} aria-label="Close"><X className="h-4 w-4" /></button>
+        {/* close */}
+        <button
+          className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded hover:bg-foreground/10"
+          onClick={handleClose}
+          aria-label="Close"
+          title="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
 
         <audio ref={audioRef} src={src} preload="auto" />
       </div>
