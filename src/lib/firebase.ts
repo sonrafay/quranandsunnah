@@ -1,6 +1,13 @@
 // src/lib/firebase.ts
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+"use client";
+
+import { initializeApp, getApps } from "firebase/app";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  browserLocalPersistence,
+  setPersistence,
+} from "firebase/auth";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -10,21 +17,15 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
-  // measurementId is optional; add if you like:
-  // measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+export const app = getApps().length ? getApps()[0]! : initializeApp(firebaseConfig);
 
+// Auth (persist across tabs/reloads)
 export const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(() => { /* ignore */ });
 export const googleProvider = new GoogleAuthProvider();
+
+// Firestore
 export const db = getFirestore(app);
-
-// Enable offline cache only in the browser
-if (typeof window !== "undefined") {
-  enableIndexedDbPersistence(db).catch(() => {
-    // ignore (e.g., private window / multi-tab)
-  });
-}
-
-export default app;
+enableIndexedDbPersistence(db).catch(() => { /* private window / multi-tab */ });

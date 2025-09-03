@@ -7,6 +7,7 @@ import ScrollProgressBar from "@/components/ScrollProgressBar";
 import SurahFooterNav from "@/components/quran/SurahFooterNav";
 import AudioPlayerBar, { AudioItem, Segment } from "@/components/quran/AudioPlayerBar";
 import SurahTitle from "@/components/quran/SurahTitle";
+import BookmarksLayer from "@/components/quran/BookmarksLayer";
 
 type QFVerse = {
   verse_number: number;
@@ -36,7 +37,6 @@ type QFRecitation = { id: number; reciter_name: string };
 function absolutizeAudio(url?: string): string | undefined {
   if (!url) return undefined;
   if (/^https?:\/\//i.test(url)) return url;
-  // The QF stack serves audio from these CDNs; accept either
   return `https://audio.qurancdn.com/${url.replace(/^\/?/, "")}`;
 }
 
@@ -68,11 +68,17 @@ async function getTranslations(): Promise<TranslationItem[]> {
 }
 
 async function getReciters(): Promise<Reciter[]> {
-  const data = await qfGet<{ recitations: QFRecitation[] }>(
+  const data = await qfGet<{ recitations: { id: number; reciter_name: string }[] }>(
     "/resources/recitations",
     { revalidate: 60 * 60 * 24 }
   );
-  return (data.recitations ?? []).map((r) => ({ id: r.id, name: r.reciter_name }));
+  const seen = new Map<number, string>();
+  for (const r of data.recitations ?? []) {
+    if (!seen.has(r.id)) seen.set(r.id, r.reciter_name);
+  }
+  return Array.from(seen, ([id, name]) => ({ id, name })).sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
 }
 
 // Single full-surah audio + timings (segments)
@@ -81,34 +87,33 @@ async function getSurahAudio(
   surah: string
 ): Promise<{ url: string; segments: Segment[]; duration?: number } | null> {
   try {
-    // Docs: /recitations/{recitation_id}/audio_files?chapter_number=...&fields=url,duration,segments
     const res = await qfGet<{ audio_files: any[] }>(
       `/recitations/${reciterId}/audio_files`,
       { query: { chapter_number: surah, fields: "url,duration,segments" }, revalidate: 60 * 60 }
     );
-
     const af = res.audio_files?.[0];
     if (!af?.url) return null;
 
     const url = absolutizeAudio(af.url) ?? "";
     const duration = typeof af.duration === "number" ? af.duration : undefined;
 
-    // segments is nested: [[ [startMs, durMs, zeroBasedAyahIdx], ... ]]
-    const raw: any[] =
-      Array.isArray(af.segments) && Array.isArray(af.segments[0]) ? (af.segments[0] as any[]) : [];
+  const raw: any[] =
+    Array.isArray(af.segments) && Array.isArray(af.segments[0])
+      ? (af.segments[0] as any[])
+      : [];
 
-    const segments: Segment[] = raw
-      .map((triple: any): Segment | null => {
-        const [startMs, durMs, idx] = triple || [];
-        if (typeof idx !== "number" || idx < 0) return null;
-        const n = idx + 1;
-        const start = (Number(startMs) || 0) / 1000;
-        const end = start + (Number(durMs) || 0) / 1000;
-        if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
-        return { n, start, end };
-      })
-      .filter((s): s is Segment => s !== null)
-      .sort((a, b) => a.n - b.n);
+  const segments: Segment[] = raw
+    .map((triple: any): Segment | null => {
+      const [startMs, durMs, idx] = triple || [];
+      if (typeof idx !== "number" || idx < 0) return null;
+      const n = idx + 1;
+      const start = (Number(startMs) || 0) / 1000;
+      const end = start + (Number(durMs) || 0) / 1000;
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+      return { n, start, end };
+    })
+    .filter((s): s is Segment => s !== null)
+    .sort((a, b) => a.n - b.n);
 
     if (!segments.length) return null;
     return { url, segments, duration };
@@ -116,8 +121,6 @@ async function getSurahAudio(
     return null;
   }
 }
-
-
 
 function parseIdList(param?: string): number[] | undefined {
   if (!param) return undefined;
@@ -157,10 +160,8 @@ async function fetchVerses(
     per_page: "300",
     fields: "text_uthmani,verse_key,verse_number",
   };
-
   const query: Record<string, string> = { ...baseQuery };
   if (opts.translationIds?.length) query.translations = opts.translationIds.join(",");
-  // we still pass audio as a fallback source for per-ayah urls
   if (opts.reciterId) query.audio = String(opts.reciterId);
 
   try {
@@ -168,7 +169,6 @@ async function fetchVerses(
       query,
       revalidate: 60 * 60,
     });
-
     const verses = (data.verses ?? []).map((v) => ({
       n: v.verse_number,
       key: v.verse_key,
@@ -176,7 +176,6 @@ async function fetchVerses(
       translations: v.translations?.map((t) => ({ text: t.text, source: t.resource_name })) ?? [],
       audioUrl: absolutizeAudio(v.audio?.url),
     }));
-
     return { chapter: Number(surah), verses };
   } catch {
     const fallback = await qfGet<{ verses: QFVerse[] }>(`/verses/by_chapter/${surah}`, {
@@ -216,7 +215,6 @@ export default async function SurahPage({
   const selectedT = parseIdList(searchParams?.t) ?? pickDefaultTranslation(catalog);
   const selectedR = parseIdList(searchParams?.r)?.[0] ?? pickDefaultReciter(reciters);
 
-  // verses + single-track audio with timings
   const [data, surahAudio] = await Promise.all([
     fetchVerses(surah, { translationIds: selectedT, reciterId: selectedR }),
     getSurahAudio(selectedR, surah),
@@ -234,61 +232,61 @@ export default async function SurahPage({
         {/* HEADER */}
         <SurahTitle id={data.chapter} arabicName={meta.arabicName} englishNick={meta.englishNick} />
 
-
-        {/* Controls */}
+        {/* Controls (single row) */}
         <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
           <ReciterPicker reciters={reciters} selectedId={selectedR} />
           <TranslationMultiPicker translations={catalog} selectedIds={selectedT} />
         </div>
 
+        {/* Subscribe + paint bookmark highlights */}
+        <BookmarksLayer surah={data.chapter} />
+
         {/* Verses */}
         <div className="space-y-8">
           {data.verses.map((v) => (
-        <article
-          key={v.key}
-          id={`ayah-${v.n}`}
-          className="
-            relative scroll-mt-28 md:scroll-mt-36
-            rounded-2xl border bg-background/60
-            p-5 md:p-6 pl-14 md:pl-16
-            min-h-44 md:min-h-52
-            flex flex-col justify-center
-          "
-        >
-          {/* Action icons column — vertically centered */}
-          <div className="absolute left-2 top-1/2 -translate-y-1/2">
-            <VerseActions
-              compact
-              surah={data.chapter}
-              ayah={v.n}
-              textToCopy={[v.arabic, ...v.translations.map((t) => t.text)]
-                .filter(Boolean)
-                .join('\n')}
-            />
-          </div>
-
-          {/* Arabic */}
-          <div
-            className="font-quran text-3xl md:text-4xl leading-[2.6rem] md:leading-[3.1rem]"
-            dir="rtl"
-          >
-            {v.arabic}
-          </div>
-
-          {/* Translations (stacked) */}
-          {v.translations.map((t, i) => (
-            <div
-              key={i}
-              className="mt-4 text-base md:text-lg leading-relaxed text-muted-foreground"
-              dir="ltr"
+            <article
+              key={v.key}
+              id={`ayah-${v.n}`}
+              className="
+                relative scroll-mt-28 md:scroll-mt-36
+                rounded-2xl border bg-background/60
+                p-5 md:p-6 pl-14 md:pl-16
+                min-h-44 md:min-h-52
+                flex flex-col justify-center
+              "
             >
-              {t.text}
-              {t.source && <span className="ml-2 opacity-70">— {t.source}</span>}
-            </div>
-          ))}
-        </article>
+              {/* Action icons column — vertically centered */}
+              <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                <VerseActions
+                  compact
+                  surah={data.chapter}
+                  ayah={v.n}
+                  textToCopy={[v.arabic, ...v.translations.map((t) => t.text)]
+                    .filter(Boolean)
+                    .join("\n")}
+                />
+              </div>
 
+              {/* Arabic */}
+              <div
+                className="font-quran text-3xl md:text-4xl leading-[2.6rem] md:leading-[3.1rem]"
+                dir="rtl"
+              >
+                {v.arabic}
+              </div>
 
+              {/* Translations (stacked) */}
+              {v.translations.map((t, i) => (
+                <div
+                  key={i}
+                  className="mt-4 text-base md:text-lg leading-relaxed text-muted-foreground"
+                  dir="ltr"
+                >
+                  {t.text}
+                  {t.source && <span className="ml-2 opacity-70">— {t.source}</span>}
+                </div>
+              ))}
+            </article>
           ))}
         </div>
 

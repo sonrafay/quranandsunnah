@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Base */
 @layer base {
   * { @apply border-border; }
   body {
@@ -15,6 +16,7 @@
 
 html { scroll-behavior: smooth; }
 
+/* Theme tokens */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -76,30 +78,26 @@ html { scroll-behavior: smooth; }
   font-family: "KFGQPC Uthmanic Script", var(--font-geist-sans), system-ui, sans-serif;
 }
 
-/* Active ayah highlight (already in your project) */
+/* Active ayah highlight (audio-playing) */
 [data-active-ayah="1"],
 .active-ayah {
   outline: 2px solid hsl(174 100% 29% / 0.9);
   outline-offset: 2px;
-  background: color-mix(in oklab, transparent 92%, #0ea5a2 8%);
+  background: color-mix(in oklab, transparent 90%, #0ea5a2 10%);
   transition: background 120ms linear, outline-color 120ms linear;
 }
 
-/* === Smooth theme fade (surfaces only; text snaps) === */
+/* Smooth theme fade (surfaces only; text snaps) */
 html.theme-fade,
 html.theme-fade * {
-  /* no 'color' and no 'opacity' here */
   transition-property: background-color, border-color, fill, stroke, box-shadow;
   transition-duration: 280ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-/* If anything still animates text, opt it out explicitly */
 .no-theme-fade,
 .no-theme-fade * {
   transition: none !important;
 }
-
 @media (prefers-reduced-motion: reduce) {
   html.theme-fade,
   html.theme-fade * {
@@ -107,3 +105,27 @@ html.theme-fade * {
   }
 }
 
+/* Pastel bookmark tints (audio highlight takes precedence) */
+article[data-bookmark="p1"]:not([data-active-ayah="1"]) {
+  background: color-mix(in oklab, transparent 90%, #34d399 10%); /* emerald */
+  outline: 1px solid color-mix(in oklab, #34d399 35%, transparent);
+}
+article[data-bookmark="p2"]:not([data-active-ayah="1"]) {
+  background: color-mix(in oklab, transparent 90%, #38bdf8 10%); /* sky */
+  outline: 1px solid color-mix(in oklab, #38bdf8 35%, transparent);
+}
+article[data-bookmark="p3"]:not([data-active-ayah="1"]) {
+  background: color-mix(in oklab, transparent 90%, #fbbf24 12%); /* amber */
+  outline: 1px solid color-mix(in oklab, #fbbf24 40%, transparent);
+}
+article[data-bookmark="p4"]:not([data-active-ayah="1"]) {
+  background: color-mix(in oklab, transparent 90%, #fb7185 10%); /* rose */
+  outline: 1px solid color-mix(in oklab, #fb7185 35%, transparent);
+}
+article[data-bookmark="p5"]:not([data-active-ayah="1"]) {
+  background: color-mix(in oklab, transparent 90%, #a78bfa 10%); /* violet */
+  outline: 1px solid color-mix(in oklab, #a78bfa 35%, transparent);
+}
+
+/* Keep scrollbar width stable when overlays/menus open (optional) */
+html { scrollbar-gutter: stable; }

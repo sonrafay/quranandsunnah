@@ -1,10 +1,11 @@
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navigation } from "@/components/Navigation";
 import AmbientGlow from "@/components/AmbientGlow";
-import Head from "next/head";
+import AuthProvider from "@/components/auth/AuthProvider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -19,26 +20,21 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "Quran & Sunnah",
-  description: "Read, listen, and study the Qur’an and Sunnah.",
+  description: "Read the Qur'an and Sunnah beautifully, for free.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <Head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </Head>
-
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
-        {/* IMPORTANT: keep attribute="class"; do NOT pass disableTransitionOnChange */}
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <AmbientGlow />
-          <div className="relative z-10">
-            <Navigation />
-            {children}
-          </div>
+       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange={false}>
+          <AuthProvider>
+            <AmbientGlow />
+            <div className="relative z-10">
+              <Navigation />
+              {children}
+            </div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
