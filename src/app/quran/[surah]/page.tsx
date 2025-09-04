@@ -1,4 +1,6 @@
+// src/app/quran/[surah]/page.tsx
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { qfGet } from "@/lib/server/qf";
 import VerseActions from "@/components/quran/VerseActions";
 import TranslationMultiPicker, { TranslationItem } from "@/components/quran/TranslationMultiPicker";
@@ -8,6 +10,9 @@ import SurahFooterNav from "@/components/quran/SurahFooterNav";
 import AudioPlayerBar, { AudioItem, Segment } from "@/components/quran/AudioPlayerBar";
 import SurahTitle from "@/components/quran/SurahTitle";
 import BookmarksLayer from "@/components/quran/BookmarksLayer";
+
+// ✅ Mount the compact left notes box (client-only)
+const NotesPanel = dynamic(() => import("@/components/quran/NotesPanel"), { ssr: false });
 
 type QFVerse = {
   verse_number: number;
@@ -97,23 +102,23 @@ async function getSurahAudio(
     const url = absolutizeAudio(af.url) ?? "";
     const duration = typeof af.duration === "number" ? af.duration : undefined;
 
-  const raw: any[] =
-    Array.isArray(af.segments) && Array.isArray(af.segments[0])
-      ? (af.segments[0] as any[])
-      : [];
+    const raw: any[] =
+      Array.isArray(af.segments) && Array.isArray(af.segments[0])
+        ? (af.segments[0] as any[])
+        : [];
 
-  const segments: Segment[] = raw
-    .map((triple: any): Segment | null => {
-      const [startMs, durMs, idx] = triple || [];
-      if (typeof idx !== "number" || idx < 0) return null;
-      const n = idx + 1;
-      const start = (Number(startMs) || 0) / 1000;
-      const end = start + (Number(durMs) || 0) / 1000;
-      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
-      return { n, start, end };
-    })
-    .filter((s): s is Segment => s !== null)
-    .sort((a, b) => a.n - b.n);
+    const segments: Segment[] = raw
+      .map((triple: any): Segment | null => {
+        const [startMs, durMs, idx] = triple || [];
+        if (typeof idx !== "number" || idx < 0) return null;
+        const n = idx + 1;
+        const start = (Number(startMs) || 0) / 1000;
+        const end = start + (Number(durMs) || 0) / 1000;
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+        return { n, start, end };
+      })
+      .filter((s): s is Segment => s !== null)
+      .sort((a, b) => a.n - b.n);
 
     if (!segments.length) return null;
     return { url, segments, duration };
@@ -241,12 +246,16 @@ export default async function SurahPage({
         {/* Subscribe + paint bookmark highlights */}
         <BookmarksLayer surah={data.chapter} />
 
+        {/* ✅ Mount the compact left-side NotesPanel once */}
+        <NotesPanel />
+
         {/* Verses */}
         <div className="space-y-8">
           {data.verses.map((v) => (
             <article
               key={v.key}
               id={`ayah-${v.n}`}
+              data-ayah={v.n} // harmless helper attribute
               className="
                 relative scroll-mt-28 md:scroll-mt-36
                 rounded-2xl border bg-background/60

@@ -13,9 +13,23 @@
     "jsx": "preserve",
     "incremental": true,
     "plugins": [{ "name": "next" }],
-    "baseUrl": ".",                  
-    "paths": { "@/*": ["./src/*"] }  
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] },
+
+    /* Make sure global .d.ts files are loaded */
+    "typeRoots": ["./src/types", "./node_modules/@types"],
+
+    /* Optional (nice to have) */
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+
+    /* Ensure your globals are included */
+    "src/types/**/*.d.ts"
+  ],
   "exclude": ["node_modules"]
 }

@@ -14,7 +14,7 @@ type Row = {
   id: string;
   surah: number;
   ayah: number;
-  color: BookmarkColor;
+  color?: BookmarkColor | null; // ← may be missing in legacy docs
   createdAt?: { seconds: number; nanoseconds: number };
 };
 
@@ -25,6 +25,11 @@ const COLOR_META: Record<BookmarkColor, { name: string; dot: string }> = {
   p4: { name: "Rose",   dot: "bg-rose-300" },
   p5: { name: "Violet", dot: "bg-violet-300" },
 };
+
+// Safe meta (fallback for rows with no color)
+function metaForColor(c?: BookmarkColor | null) {
+  return c ? COLOR_META[c] : { name: "None", dot: "bg-muted-foreground/40" };
+}
 
 export default function BookmarksPage() {
   const { user, loading, signInGoogle } = useAuth();
@@ -51,7 +56,11 @@ export default function BookmarksPage() {
 
   const filtered = useMemo(() => {
     let out = rows.slice();
-    if (filters.length) out = out.filter((r) => filters.includes(r.color));
+
+    // filter by selected colors (ignore rows with no color)
+    if (filters.length) out = out.filter((r) => r.color && filters.includes(r.color));
+
+    // sort
     switch (sortBy) {
       case "newest":
         out.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
@@ -63,7 +72,11 @@ export default function BookmarksPage() {
         out.sort((a, b) => a.surah - b.surah || a.ayah - b.ayah);
         break;
       case "color":
-        out.sort((a, b) => a.color.localeCompare(b.color) || a.surah - b.surah || a.ayah - b.ayah);
+        out.sort((a, b) =>
+          (a.color ?? "").toString().localeCompare((b.color ?? "").toString()) ||
+          a.surah - b.surah ||
+          a.ayah - b.ayah
+        );
         break;
     }
     return out;
@@ -147,6 +160,8 @@ export default function BookmarksPage() {
                 ? `#${String(r.surah).padStart(3, "0")} • ${s.englishName}`
                 : `Surah ${r.surah}`;
               const link = `/quran/${r.surah}#ayah-${r.ayah}`;
+              const meta = metaForColor(r.color);
+
               return (
                 <div
                   key={r.id}
@@ -154,7 +169,7 @@ export default function BookmarksPage() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="text-sm opacity-80">{labelLeft}</div>
-                    <span className={cn("h-3 w-3 rounded-full", COLOR_META[r.color].dot)} />
+                    <span className={cn("h-3 w-3 rounded-full", meta.dot)} />
                   </div>
                   <div className="mt-1 font-medium">
                     Ayah {r.surah}:{r.ayah}
