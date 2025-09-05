@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { deleteQuranNote, saveQuranNote } from "@/lib/cloud";
 import { getApp } from "firebase/app";
 import { getFirestore, collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import AppSubnav from "@/components/AppSubnav";
 
 type QuranNote = {
   scope: "quran";
@@ -75,15 +76,23 @@ export default function NotesPage() {
   if (!user) {
     return (
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-28 space-y-4 text-center">
+        <AppSubnav />
         <h1 className="text-2xl font-bold">Notes</h1>
         <p className="text-muted-foreground">Sign in to view and manage your reflections.</p>
-        {/* Use your existing auth buttons if you want parity with bookmarks */}
+        <button
+          onClick={signInGoogle}
+          className="inline-flex items-center rounded-md bg-foreground px-4 py-2 text-sm text-background"
+        >
+          Continue with Google
+        </button>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-28">
+      <AppSubnav />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Notes</h1>

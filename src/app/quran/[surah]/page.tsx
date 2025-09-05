@@ -10,6 +10,8 @@ import SurahFooterNav from "@/components/quran/SurahFooterNav";
 import AudioPlayerBar, { AudioItem, Segment } from "@/components/quran/AudioPlayerBar";
 import SurahTitle from "@/components/quran/SurahTitle";
 import BookmarksLayer from "@/components/quran/BookmarksLayer";
+import QuranRecentTracker from "@/components/quran/QuranRecentTracker";
+
 
 // ✅ Mount the compact left notes box (client-only)
 const NotesPanel = dynamic(() => import("@/components/quran/NotesPanel"), { ssr: false });
@@ -246,6 +248,8 @@ export default async function SurahPage({
         {/* Subscribe + paint bookmark highlights */}
         <BookmarksLayer surah={data.chapter} />
 
+        {/* Save recent readings (invisible) */}
+        <QuranRecentTracker surah={data.chapter} />
         {/* ✅ Mount the compact left-side NotesPanel once */}
         <NotesPanel />
 
@@ -264,8 +268,13 @@ export default async function SurahPage({
                 flex flex-col justify-center
               "
             >
-              {/* Action icons column — vertically centered */}
-              <div className="absolute left-2 top-1/2 -translate-y-1/2">
+              {/* Action column + tiny verse label */}
+              <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col items-center">
+                {/* Small "chapter:verse" label */}
+                <div className="mb-1 rounded px-1.5 py-0.5 text-[10px] leading-none font-medium text-foreground/70 bg-foreground/5">
+                  {data.chapter}:{v.n}
+                </div>
+
                 <VerseActions
                   compact
                   surah={data.chapter}
@@ -275,6 +284,7 @@ export default async function SurahPage({
                     .join("\n")}
                 />
               </div>
+
 
               {/* Arabic */}
               <div

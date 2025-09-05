@@ -71,8 +71,8 @@ export function Navigation() {
     pathname.startsWith("/account") ||
     pathname.startsWith("/bookmarks") ||
     pathname.startsWith("/notes") ||
-    pathname.startsWith("/notifications") ||
-    pathname.startsWith("/signin");
+    pathname.startsWith("/signin") ||
+    pathname.startsWith("/recent");
 
   const links = isApp ? appLinks : landingLinks;
   const hidden = useHideOnScroll();

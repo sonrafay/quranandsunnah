@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import {
   doc, setDoc, serverTimestamp, collection, deleteDoc,
   onSnapshot, query, where, getDocs, orderBy, Timestamp,
-  getDoc, updateDoc, arrayUnion, arrayRemove,
+  getDoc, updateDoc, arrayUnion, arrayRemove, limit as fsLimit
 } from "firebase/firestore";
 
 /* =========================
@@ -242,3 +242,49 @@ async function updateDocOrSet(ref: ReturnType<typeof doc>, partial: any) {
     await setDoc(ref, { list: [], ...partial }, { merge: true });
   }
 }
+
+/* -------------------------
+ * Recent Qur’an readings
+ * -------------------------
+ * One doc per surah under: users/{uid}/recentReadings/{surah}
+ * We update the timestamp + last ayah, then read top 5 by updatedAt.
+ */
+export async function saveRecentReading(
+  uid: string,
+  surah: number,
+  ayah?: number | null
+) {
+  await setDoc(
+    doc(db, "users", uid, "recentReadings", String(surah)),
+    { surah, ayah: ayah ?? null, updatedAt: serverTimestamp(), createdAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+export async function getRecentReadings(uid: string, take: number = 5) {
+  try {
+    const q = query(
+      collection(db, "users", uid, "recentReadings"),
+      orderBy("updatedAt", "desc"),
+      fsLimit(take)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Array<{
+      id: string;
+      surah: number;
+      ayah?: number | null;
+      createdAt?: Timestamp;
+      updatedAt?: Timestamp;
+    }>;
+  } catch (e: any) {
+    // Helpful console note during development
+    console.error("[getRecentReadings] Failed:", e?.code || e);
+    throw e;
+  }
+}
+
+
+export async function removeRecentReading(uid: string, surah: number) {
+  await deleteDoc(doc(db, "users", uid, "recentReadings", String(surah)));
+}
+

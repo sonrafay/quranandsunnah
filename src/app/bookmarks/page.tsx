@@ -1,4 +1,3 @@
-// src/app/bookmarks/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -9,12 +8,13 @@ import { getAllQuranBookmarks, setQuranBookmarkColor, BookmarkColor } from "@/li
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { surahs } from "@/lib/quran-meta";
+import AppSubnav from "@/components/AppSubnav";
 
 type Row = {
   id: string;
   surah: number;
   ayah: number;
-  color?: BookmarkColor | null; // ← may be missing in legacy docs
+  color?: BookmarkColor | null; // may be missing in legacy docs
   createdAt?: { seconds: number; nanoseconds: number };
 };
 
@@ -89,6 +89,7 @@ export default function BookmarksPage() {
   if (!user) {
     return (
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-28 space-y-4 text-center">
+        <AppSubnav />
         <h1 className="text-2xl font-bold">Bookmarks</h1>
         <p className="text-muted-foreground">Sign in to view your saved highlights.</p>
         <div className="flex items-center justify-center gap-3">
@@ -103,6 +104,8 @@ export default function BookmarksPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-28">
+      <AppSubnav />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Bookmarks</h1>
