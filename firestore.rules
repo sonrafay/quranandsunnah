@@ -1,0 +1,102 @@
+// firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // --- Validators ---
+    function isValidQuranNote() {
+      return request.resource.data.scope == "quran"
+        && request.resource.data.surah is int
+        && request.resource.data.ayah is int
+        && request.resource.data.content is string
+        && (request.resource.data.createdAt == null || request.resource.data.createdAt is timestamp || request.resource.data.createdAt == request.time)
+        && (request.resource.data.updatedAt == null || request.resource.data.updatedAt is timestamp || request.resource.data.updatedAt == request.time);
+    }
+
+    function isValidBookmark() {
+      return request.resource.data.surah is int
+        && request.resource.data.ayah is int
+        && (request.resource.data.color in ["p1","p2","p3","p4","p5"])
+        && (request.resource.data.createdAt == null || request.resource.data.createdAt is timestamp || request.resource.data.createdAt == request.time)
+        && (request.resource.data.updatedAt == null || request.resource.data.updatedAt is timestamp || request.resource.data.updatedAt == request.time);
+    }
+
+    function isValidRecentReading() {
+      return request.resource.data.surah is int
+        && (request.resource.data.ayah == null || request.resource.data.ayah is int)
+        && (request.resource.data.createdAt == null || request.resource.data.createdAt is timestamp || request.resource.data.createdAt == request.time)
+        && (request.resource.data.updatedAt == null || request.resource.data.updatedAt is timestamp || request.resource.data.updatedAt == request.time);
+    }
+
+    // ---- App data under /users/{uid} ----
+    match /users/{uid} {
+
+      // Allow reading/writing of the user root doc (profile fields)
+      allow read, write: if isOwner(uid);
+
+      // Settings (single-doc reads/writes like "notifications")
+      match /settings/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+     // (optional) Any other subcollections under users/{uid}
+     match /{any=**} {
+     allow read, write: if request.auth != null && request.auth.uid == uid;
+     }  
+
+      // Progress
+      match /progress/{docId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Qur’an colored bookmarks
+      match /quranBookmarks/{bookId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && isValidBookmark();
+        allow delete: if isOwner(uid);
+      }
+
+      // Hadith bookmarks (kept simple)
+      match /hadithBookmarks/{bookId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Notes (generic). Qur’an notes validated via isValidQuranNote().
+      match /notes/{noteId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && (
+          (request.resource.data.scope == "quran" && isValidQuranNote())
+          || (request.resource.data.scope == "hadith")
+        );
+        allow delete: if isOwner(uid);
+      }
+
+      // notesIndex/{surah}: { list: number[] }
+      match /notesIndex/{surahId} {
+        allow read: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid)
+          && (request.resource.data.list == null || request.resource.data.list is list);
+      }
+
+      // Recent readings
+      match /recentReadings/{surahId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && isValidRecentReading();
+        allow delete: if isOwner(uid);
+      }
+
+      // Notification subscription doc (token/prefs live here too)
+      match /notifSubs/{subId} {
+        allow read, write: if isOwner(uid) && subId == uid;
+      }
+    }
+  }
+}

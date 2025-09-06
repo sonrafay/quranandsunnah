@@ -13,6 +13,8 @@ import {
   to12h,
   bearingToQibla,
 } from "@/lib/prayer";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { saveNotificationPrefs } from "@/lib/cloud";
 
 type TabKey = "prayer" | "qibla";
 
@@ -41,6 +43,8 @@ export default function PrayerPage() {
   const [bearing, setBearing] = useState<number | null>(null);
   const [deviceHeading, setDeviceHeading] = useState<number | null>(null);
   const listenRef = useRef(false);
+  const { user } = useAuth();
+
 
   const today = useMemo(() => new Date(), []);
   const tomorrow = useMemo(() => {
@@ -94,17 +98,24 @@ export default function PrayerPage() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
         setCoords({ lat, lon });
         fetchTimes(lat, lon);
         setBearing(bearingToQibla(lat, lon));
+
+        // NEW: save to notification prefs so server can schedule
+        if (user) {
+          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+          await saveNotificationPrefs(user.uid, { location: { lat, lon, tz } });
+        }
       },
       (e) => setErr(e.message || "Could not get location."),
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }, [fetchTimes]);
+  }, [fetchTimes, user]);
+
 
   // Try once on mount
   useEffect(() => {

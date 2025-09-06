@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import {
   doc, setDoc, serverTimestamp, collection, deleteDoc,
   onSnapshot, query, where, getDocs, orderBy, Timestamp,
-  getDoc, updateDoc, arrayUnion, arrayRemove, limit as fsLimit
+  getDoc, updateDoc, deleteField, arrayUnion, arrayRemove, limit as fsLimit
 } from "firebase/firestore";
 
 /* =========================
@@ -288,3 +288,57 @@ export async function removeRecentReading(uid: string, surah: number) {
   await deleteDoc(doc(db, "users", uid, "recentReadings", String(surah)));
 }
 
+
+export type NotificationPrefs = {
+  webEnabled?: boolean;                         // toggle for web push
+  fcmToken?: string;                            // saved by client after permission
+  fcmUpdatedAt?: any;                           // serverTimestamp
+  location?: { lat: number; lon: number; tz: string };  // saved from Prayer page
+  prayer?: { enabled: boolean; offsets: number[] };     // minutes before prayer
+  kahf?: { enabled: boolean };                  // Friday reminder
+  // (legacy fields may still exist; we just ignore them)
+};
+
+export async function saveNotificationPrefs(
+  uid: string,
+  prefs: Partial<NotificationPrefs>
+) {
+  const ref = doc(db, "users", uid, "settings", "notifications");
+  await setDoc(ref, { ...prefs, updatedAt: serverTimestamp() }, { merge: true });
+}
+
+export async function getNotificationPrefs(
+  uid: string
+): Promise<NotificationPrefs | null> {
+  const ref = doc(db, "users", uid, "settings", "notifications");
+  const snap = await getDoc(ref);
+  return snap.exists() ? (snap.data() as NotificationPrefs) : null;
+}
+
+export function onNotificationPrefs(
+  uid: string,
+  cb: (prefs: NotificationPrefs | null) => void
+) {
+  const ref = doc(db, "users", uid, "settings", "notifications");
+  return onSnapshot(ref, (snap) => {
+    cb(snap.exists() ? (snap.data() as NotificationPrefs) : null);
+  });
+}
+
+export async function saveFcmToken(uid: string, token: string) {
+  const ref = doc(db, "users", uid, "settings", "notifications");
+  await setDoc(
+    ref,
+    { fcmToken: token, fcmUpdatedAt: serverTimestamp(), webEnabled: true },
+    { merge: true }
+  );
+}
+
+export async function clearFcmToken(uid: string) {
+  const ref = doc(db, "users", uid, "settings", "notifications");
+  await setDoc(
+    ref,
+    { fcmToken: deleteField(), fcmUpdatedAt: serverTimestamp() },
+    { merge: true }
+  );
+}
