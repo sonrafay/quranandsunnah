@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export default function SignInPage() {
+function SignInPageContent() {
   const { user, loading, signInGoogle } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
@@ -176,5 +176,13 @@ export default function SignInPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<main className="min-h-[70vh] grid place-items-center px-4"><div>Loading…</div></main>}>
+      <SignInPageContent />
+    </Suspense>
   );
 }

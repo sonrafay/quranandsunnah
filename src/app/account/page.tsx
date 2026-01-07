@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { updateProfile } from "firebase/auth";
@@ -55,7 +55,7 @@ function AvatarPreview({
   );
 }
 
-export default function AccountPage() {
+function AccountPageContent() {
   const router = useRouter();
   const params = useSearchParams();
   const backTo = params.get("next") || "/quran";
@@ -218,5 +218,13 @@ export default function AccountPage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-28">Loading…</div>}>
+      <AccountPageContent />
+    </Suspense>
   );
 }

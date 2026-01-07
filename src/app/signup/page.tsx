@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export default function SignUpPage() {
+function SignUpPageContent() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/quran";
@@ -95,5 +95,13 @@ export default function SignUpPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[80vh] grid place-items-center px-4 pt-24"><div>Loading…</div></div>}>
+      <SignUpPageContent />
+    </Suspense>
   );
 }
