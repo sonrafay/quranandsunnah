@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
+import { useThemeTransition } from "@/hooks/use-theme-transition";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ type Settings = {
 };
 
 export default function SettingsPage() {
-  const { theme, setTheme, systemTheme } = useTheme();
+  const { theme, setTheme, systemTheme } = useThemeTransition();
 
   const [pref, setPref] = useState<Settings>({
     wordByWord: { translation: true, transliteration: false, recitation: false },

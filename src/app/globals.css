@@ -90,20 +90,26 @@ html {
   transition: background 120ms linear, outline-color 120ms linear;
 }
 
-/* Smooth theme fade (surfaces only; text snaps) */
-html.theme-fade,
-html.theme-fade * {
-  transition-property: background-color, border-color, fill, stroke, box-shadow;
-  transition-duration: 280ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+/* Smooth theme transitions - applied directly to root for consistency */
+html {
+  transition: background-color 198ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-.no-theme-fade,
-.no-theme-fade * {
-  transition: none !important;
+
+body {
+  transition: background-color 198ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 198ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Apply smooth transitions to common elements */
+* {
+  transition: background-color 198ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 198ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 198ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
-  html.theme-fade,
-  html.theme-fade * {
+  html, body, * {
     transition: none !important;
   }
 }

@@ -1,25 +1,11 @@
 "use client";
 
-import { useTheme } from "next-themes";
+import { useThemeTransition } from "@/hooks/use-theme-transition";
 import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 
-/**
- * A small helper to add a fade class to <html> for a short time,
- * unless the user prefers reduced motion.
- */
-function runThemeFade(ms = 320) {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const root = document.documentElement as HTMLElement & { __fadeTO?: number };
-  root.classList.add("theme-fade");
-  if (root.__fadeTO) window.clearTimeout(root.__fadeTO);
-  root.__fadeTO = window.setTimeout(() => {
-    root.classList.remove("theme-fade");
-  }, ms) as unknown as number;
-}
-
 export function ModeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useThemeTransition();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -27,7 +13,6 @@ export function ModeToggle() {
   const next = isDark ? "light" : "dark";
 
   function onToggle() {
-    runThemeFade();
     setTheme(next);
   }
 
