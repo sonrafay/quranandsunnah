@@ -81,84 +81,158 @@ export function Navigation() {
   return (
     <nav
       className={cn(
-        "fixed w-full top-0 z-50 px-4 py-3 transition-transform duration-200",
+        "fixed w-full top-0 z-50 px-2 sm:px-4 py-2 sm:py-3 transition-transform duration-200",
         hidden ? "-translate-y-full" : "translate-y-0"
       )}
     >
-      <div className="max-w-7xl mx-auto grid grid-cols-3 items-center">
-        {/* brand (left) */}
-        <div className="flex items-center">
-          <Link
-            href={isApp ? "/quran" : "/#home"}
-            className="rounded-full px-3 py-1 font-semibold tracking-tight hover:opacity-90 transition"
-            aria-label="Quran & Sunnah Home"
-          >
-            Quran &amp; Sunnah
-          </Link>
-        </div>
+      <div className="max-w-7xl mx-auto">
+        {/* Mobile: Stack vertically */}
+        <div className="flex flex-col gap-2 md:hidden">
+          {/* Row 1: Brand + Right Controls */}
+          <div className="flex items-center justify-between">
+            <Link
+              href={isApp ? "/quran" : "/#home"}
+              className="rounded-full px-3 py-1 font-semibold tracking-tight hover:opacity-90 transition text-sm"
+              aria-label="Quran & Sunnah Home"
+            >
+              Quran &amp; Sunnah
+            </Link>
+            <div className="flex items-center gap-1">
+              {isLanding ? (
+                <Button asChild size="sm" className="font-normal text-xs h-8">
+                  <Link href="/quran">Open App</Link>
+                </Button>
+              ) : (
+                <>
+                  <Link
+                    href="/search"
+                    className="rounded-full border bg-background/60 backdrop-blur p-2 hover:bg-muted transition"
+                    title="Search"
+                  >
+                    <Search className="h-4 w-4" />
+                  </Link>
 
-        {/* centered island (hidden on utility pages) */}
-        <div className="flex items-center justify-center">
+                  <Link
+                    href="/settings"
+                    className="rounded-full border bg-background/60 backdrop-blur p-2 hover:bg-muted transition"
+                    title="Settings"
+                  >
+                    <Gear className="h-4 w-4" />
+                  </Link>
+
+                  <ProfileMenu iconOnlyBelow="xl" />
+                </>
+              )}
+              <ModeToggle />
+            </div>
+          </div>
+
+          {/* Row 2: Navigation Menu */}
           {!isUtility && (
-            <NavigationMenu>
-              <NavigationMenuList className="whitespace-nowrap bg-gradient-to-r from-foreground/5 via-foreground/10 to-foreground/5 backdrop-blur-md px-5 py-2 rounded-full border border-foreground/10">
-                {links.map(({ href, label, icon: Icon }) => {
-                  const active =
-                    pathname === href ||
-                    pathname.startsWith(href + "/") ||
-                    // allow root match for /quran versus /quran/[surah]
-                    (href !== "/" && pathname.startsWith(href));
-                  return (
-                    <NavigationMenuItem key={href} className="px-2 sm:px-3">
-                      <NavigationMenuLink
-                        href={href}
-                        className={cn(
-                          "flex items-center gap-2 text-sm transition-colors whitespace-nowrap",
-                          active ? "text-foreground" : "text-foreground/80 hover:text-foreground"
-                        )}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{label}</span>
-                      </NavigationMenuLink>
-                    </NavigationMenuItem>
-                  );
-                })}
-              </NavigationMenuList>
-            </NavigationMenu>
+            <div className="flex items-center justify-center">
+              <NavigationMenu>
+                <NavigationMenuList className="whitespace-nowrap bg-gradient-to-r from-foreground/5 via-foreground/10 to-foreground/5 backdrop-blur-md px-3 py-1.5 rounded-full border border-foreground/10">
+                  {links.map(({ href, label, icon: Icon }) => {
+                    const active =
+                      pathname === href ||
+                      pathname.startsWith(href + "/") ||
+                      (href !== "/" && pathname.startsWith(href));
+                    return (
+                      <NavigationMenuItem key={href} className="px-1.5">
+                        <NavigationMenuLink
+                          href={href}
+                          className={cn(
+                            "flex items-center gap-1.5 text-xs transition-colors whitespace-nowrap",
+                            active ? "text-foreground" : "text-foreground/80 hover:text-foreground"
+                          )}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          <span>{label}</span>
+                        </NavigationMenuLink>
+                      </NavigationMenuItem>
+                    );
+                  })}
+                </NavigationMenuList>
+              </NavigationMenu>
+            </div>
           )}
         </div>
 
-        {/* right controls */}
-        <div className="flex items-center justify-end gap-2">
-          {isLanding ? (
-            <Button asChild size="sm" className="font-normal">
-              <Link href="/quran">Open App</Link>
-            </Button>
-          ) : (
-            <>
-              <Link
-                href="/search"
-                className="rounded-full border bg-background/60 backdrop-blur px-3 py-1.5 text-sm hover:bg-muted transition flex items-center gap-2 font-normal"
-                title="Search"
-              >
-                <Search className="h-4 w-4" />
-                <span>Search</span>
-              </Link>
+        {/* Desktop: Flexible grid that prevents overlap */}
+        <div className="hidden md:grid grid-cols-[auto_1fr_auto] items-center gap-4">
+          {/* brand (left) */}
+          <div className="flex items-center shrink-0">
+            <Link
+              href={isApp ? "/quran" : "/#home"}
+              className="rounded-full px-3 py-1 font-semibold tracking-tight hover:opacity-90 transition text-sm xl:text-base whitespace-nowrap"
+              aria-label="Quran & Sunnah Home"
+            >
+              Quran &amp; Sunnah
+            </Link>
+          </div>
 
-              <Link
-                href="/settings"
-                className="rounded-full border bg-background/60 backdrop-blur px-3 py-1.5 text-sm hover:bg-muted transition flex items-center gap-2 font-normal"
-                title="Settings"
-              >
-                <Gear className="h-4 w-4" />
-                <span>Settings</span>
-              </Link>
+          {/* centered island (hidden on utility pages) */}
+          <div className="flex items-center justify-center min-w-0">
+            {!isUtility && (
+              <NavigationMenu>
+                <NavigationMenuList className="whitespace-nowrap bg-gradient-to-r from-foreground/5 via-foreground/10 to-foreground/5 backdrop-blur-md px-3 lg:px-4 xl:px-5 py-2 rounded-full border border-foreground/10">
+                  {links.map(({ href, label, icon: Icon }) => {
+                    const active =
+                      pathname === href ||
+                      pathname.startsWith(href + "/") ||
+                      (href !== "/" && pathname.startsWith(href));
+                    return (
+                      <NavigationMenuItem key={href} className="px-1.5 lg:px-2 xl:px-3">
+                        <NavigationMenuLink
+                          href={href}
+                          className={cn(
+                            "flex items-center gap-1.5 lg:gap-2 text-xs lg:text-sm transition-colors whitespace-nowrap",
+                            active ? "text-foreground" : "text-foreground/80 hover:text-foreground"
+                          )}
+                        >
+                          <Icon className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+                          <span>{label}</span>
+                        </NavigationMenuLink>
+                      </NavigationMenuItem>
+                    );
+                  })}
+                </NavigationMenuList>
+              </NavigationMenu>
+            )}
+          </div>
 
-              {/* Profile dropdown (auth-gated actions inside) */}
-              <ProfileMenu />
-            </>
-          )}
-          <ModeToggle />
+          {/* right controls */}
+          <div className="flex items-center justify-end gap-1.5 lg:gap-2 shrink-0">
+            {isLanding ? (
+              <Button asChild size="sm" className="font-normal text-xs lg:text-sm">
+                <Link href="/quran">Open App</Link>
+              </Button>
+            ) : (
+              <>
+                <Link
+                  href="/search"
+                  className="rounded-full border bg-background/60 backdrop-blur p-2 xl:px-3 xl:py-1.5 text-sm hover:bg-muted transition flex items-center gap-2 font-normal"
+                  title="Search"
+                >
+                  <Search className="h-4 w-4" />
+                  <span className="hidden xl:inline">Search</span>
+                </Link>
+
+                <Link
+                  href="/settings"
+                  className="rounded-full border bg-background/60 backdrop-blur p-2 xl:px-3 xl:py-1.5 text-sm hover:bg-muted transition flex items-center gap-2 font-normal"
+                  title="Settings"
+                >
+                  <Gear className="h-4 w-4" />
+                  <span className="hidden xl:inline">Settings</span>
+                </Link>
+
+                {/* Profile dropdown (auth-gated actions inside) */}
+                <ProfileMenu iconOnlyBelow="xl" />
+              </>
+            )}
+            <ModeToggle />
+          </div>
         </div>
       </div>
     </nav>

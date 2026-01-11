@@ -172,7 +172,7 @@ export default function PrayerPage() {
   }, [bearing, deviceHeading]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-28">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
       {/* Segmented slider */}
       <div className="mx-auto max-w-md">
         <div className="rounded-full border bg-background/60 backdrop-blur p-1 flex items-center gap-1">

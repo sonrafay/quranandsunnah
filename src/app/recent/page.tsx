@@ -47,12 +47,12 @@ export default function RecentReadingsPage() {
   }, [user, loading]);
 
   if (loading) {
-    return <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-28">Loading…</div>;
+    return <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">Loading…</div>;
   }
 
   if (!user) {
     return (
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-28 space-y-4 text-center">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12 space-y-4 text-center">
         <AppSubnav />
         <h1 className="text-2xl font-bold">Recent readings</h1>
         <p className="text-muted-foreground">Sign in to continue where you left off.</p>
@@ -116,7 +116,7 @@ export default function RecentReadingsPage() {
   }, [rows, fetching, user]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-28">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
       <AppSubnav />
 
       <div className="flex items-center justify-between">

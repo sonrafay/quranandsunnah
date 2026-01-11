@@ -31,7 +31,7 @@ export default function SearchPage() {
   }, [q]);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-28">
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
       <h1 className="text-2xl font-bold text-center">Search</h1>
       <div className="mt-6 flex justify-center">
         <Input

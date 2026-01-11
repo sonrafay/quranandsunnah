@@ -83,7 +83,7 @@ export default function NotificationsPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-28">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
         Loading…
       </div>
     );
@@ -91,7 +91,7 @@ export default function NotificationsPage() {
 
   if (!user) {
     return (
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-28">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
         <AppSubnav showBack />
         <h1 className="mt-4 text-2xl font-bold">Notifications</h1>
         <p className="text-muted-foreground">Sign in to configure notifications.</p>
@@ -153,7 +153,7 @@ export default function NotificationsPage() {
     });
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-28">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
       <AppSubnav showBack />
 
       <div className="mt-4 flex items-center justify-between">
