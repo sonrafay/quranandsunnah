@@ -10,6 +10,7 @@ import AmbientGlow from "@/components/AmbientGlow";
 
 import { ToasterProvider } from "@/components/ui/toaster";
 import ClientNotifications from "@/components/notifications/ClientNotifications";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 {children}
               </div>
             </ToasterProvider>
+            <Analytics />
           </AuthProvider>
         </ThemeProvider>
       </body>
