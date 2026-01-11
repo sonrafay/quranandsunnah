@@ -2,46 +2,18 @@
 "use client";
 
 import { db } from "@/lib/firebase";
-import type { PrivacySettings } from "@/lib/account/models";
 import {
   doc, setDoc, serverTimestamp, collection, deleteDoc,
   onSnapshot, query, where, getDocs, orderBy, Timestamp,
   getDoc, updateDoc, deleteField, arrayUnion, arrayRemove, limit as fsLimit
 } from "firebase/firestore";
 
-import {
-  calculateStreakUpdate,
-  getDefaultUnlocks,
-  StreakAdminOverride,
-  StreakState,
-  StreakUnlocks,
-} from "@/lib/account/streak";
-
 /* =========================
    Profiles / Settings / Progress
    ========================= */
-export type UserProfileDoc = {
-  displayName?: string;
-  photoURL?: string;
-  avatar?: string;
-  handle?: string;
-  publicId?: string;
-  verseRef?: string;
-  privacy?: PrivacySettings;
-  avatarIconId?: string;
-  avatarBorderTier?: string;
-  updatedAt?: any;
-  createdAt?: any;
-};
-
-export async function getUserProfile(uid: string): Promise<UserProfileDoc | null> {
-  const snap = await getDoc(doc(db, "users", uid));
-  return snap.exists() ? (snap.data() as UserProfileDoc) : null;
-}
-
 export async function saveProfile(
   uid: string,
-  data: UserProfileDoc
+  data: { displayName?: string; photoURL?: string; avatar?: string }
 ) {
   await setDoc(
     doc(db, "users", uid),
@@ -269,69 +241,6 @@ async function updateDocOrSet(ref: ReturnType<typeof doc>, partial: any) {
     // if doc doesn't exist yet
     await setDoc(ref, { list: [], ...partial }, { merge: true });
   }
-}
-
-/* =========================
-   Streaks (V1)
-   ========================= */
-export type StreakDoc = StreakState & {
-  unlocks: StreakUnlocks;
-  adminOverride?: StreakAdminOverride;
-  lastActionAt?: any;
-  updatedAt?: any;
-};
-
-const streakRef = (uid: string) => doc(db, "users", uid, "account", "streak");
-const legacyStreakRef = (uid: string) => doc(db, "users", uid, "streak", "daily");
-
-export async function getStreak(uid: string): Promise<StreakDoc | null> {
-  const snap = await getDoc(streakRef(uid));
-  if (snap.exists()) return snap.data() as StreakDoc;
-  const legacySnap = await getDoc(legacyStreakRef(uid));
-  if (!legacySnap.exists()) return null;
-  const legacy = legacySnap.data() as StreakDoc;
-  await saveStreak(uid, legacy);
-  return legacy;
-}
-
-export async function saveStreak(uid: string, streak: StreakDoc) {
-  const { adminOverride, ...rest } = streak;
-  const payload = {
-    ...rest,
-    ...(adminOverride ? { adminOverride } : {}),
-  };
-  await setDoc(
-    streakRef(uid),
-    { ...payload, updatedAt: serverTimestamp() },
-    { merge: true }
-  );
-}
-
-export async function recordStreakAction(
-  uid: string,
-  actionAtMs: number,
-  timeZone: string
-): Promise<StreakDoc> {
-  const existing = await getStreak(uid);
-  const previousUnlocks = existing?.unlocks ?? getDefaultUnlocks();
-  const adminOverride = existing?.adminOverride;
-  const result = calculateStreakUpdate(
-    existing ?? null,
-    actionAtMs,
-    timeZone,
-    previousUnlocks,
-    adminOverride
-  );
-
-  const nextDoc: StreakDoc = {
-    ...result.state,
-    unlocks: result.unlocks,
-    adminOverride,
-    lastActionAt: actionAtMs,
-  };
-
-  await saveStreak(uid, nextDoc);
-  return nextDoc;
 }
 
 /* -------------------------
