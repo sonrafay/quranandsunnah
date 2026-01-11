@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import AuthProvider from "@/components/auth/AuthProvider";
 import { Navigation } from "@/components/Navigation";
 import AmbientGlow from "@/components/AmbientGlow";
+import AppOpenTracker from "@/components/AppOpenTracker";
 
 import { ToasterProvider } from "@/components/ui/toaster";
 import ClientNotifications from "@/components/notifications/ClientNotifications";
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange={false}>
           <AuthProvider>
             <AmbientGlow />
+            <AppOpenTracker />
             <ToasterProvider>
               {/* Top nav & page content */}
               <div className="relative z-10">

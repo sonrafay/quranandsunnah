@@ -44,11 +44,8 @@ export default function AudioPlayerBar(props: Props) {
   const [idx, setIdx] = useState(0);              // current verse index
 
   // volume
-  const [volume, setVolume] = useState<number>(() => {
-    const saved = Number(localStorage.getItem("qs-vol"));
-    return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 1;
-  });
-  const [muted, setMuted] = useState<boolean>(() => localStorage.getItem("qs-muted") === "1");
+  const [volume, setVolume] = useState<number>(1);
+  const [muted, setMuted] = useState<boolean>(false);
 
   const isSingle = props.mode === "single";
   const segments = isSingle ? (props as SingleProps).segments : [];
@@ -154,10 +151,18 @@ export default function AudioPlayerBar(props: Props) {
 
   // volume / mute
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = Number(window.localStorage.getItem("qs-vol"));
+    setVolume(Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 1);
+    setMuted(window.localStorage.getItem("qs-muted") === "1");
+  }, []);
+
+  useEffect(() => {
     const a = audioRef.current; if (!a) return;
     a.volume = muted ? 0 : volume;
-    localStorage.setItem("qs-vol", String(volume));
-    localStorage.setItem("qs-muted", muted ? "1" : "0");
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("qs-vol", String(volume));
+    window.localStorage.setItem("qs-muted", muted ? "1" : "0");
   }, [volume, muted]);
 
   // ------- highlight + auto-scroll helpers -------
