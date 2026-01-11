@@ -21,7 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth/AuthProvider";
 
-export default function ProfileMenu() {
+export default function ProfileMenu({ iconOnlyBelow }: { iconOnlyBelow?: "sm" | "md" | "lg" | "xl" }) {
   const router = useRouter();
   const { user, loading, logOut } = useAuth();
 
@@ -35,9 +35,16 @@ export default function ProfileMenu() {
     }
   }
 
-  // Same pill look as your Search/Settings links
+  // Determine if we should hide the label based on breakpoint
+  const labelHiddenClass = iconOnlyBelow === "xl" ? "hidden xl:inline" :
+                          iconOnlyBelow === "lg" ? "hidden lg:inline" :
+                          iconOnlyBelow === "md" ? "hidden md:inline" :
+                          iconOnlyBelow === "sm" ? "hidden sm:inline" : "";
+
+  // Icon-only mode uses padding, full mode uses px-3 py-1.5
   const triggerClass = cn(
-    "rounded-full border bg-background/60 backdrop-blur px-3 py-1.5",
+    "rounded-full border bg-background/60 backdrop-blur",
+    iconOnlyBelow ? "p-2 xl:px-3 xl:py-1.5" : "px-3 py-1.5",
     "text-sm hover:bg-muted transition flex items-center gap-2 font-normal"
   );
 
@@ -59,7 +66,7 @@ export default function ProfileMenu() {
             aria-busy={loading || undefined}
           >
             <User className="h-4 w-4" />
-            <span>Profile</span>
+            <span className={labelHiddenClass || undefined}>Profile</span>
           </button>
         </DropdownMenuTrigger>
 

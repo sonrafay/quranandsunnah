@@ -40,7 +40,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-28 space-y-8">
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12 space-y-8">
       <header>
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Theme and reading preferences.</p>

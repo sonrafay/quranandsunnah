@@ -235,7 +235,7 @@ export default async function SurahPage({
     <>
       <ScrollProgressBar height={2} />
 
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-28">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
         {/* HEADER */}
         <SurahTitle id={data.chapter} arabicName={meta.arabicName} englishNick={meta.englishNick} />
 
