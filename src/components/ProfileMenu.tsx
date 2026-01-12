@@ -35,17 +35,18 @@ export default function ProfileMenu({ iconOnlyBelow }: { iconOnlyBelow?: "sm" | 
     }
   }
 
-  // Determine if we should hide the label based on breakpoint
-  const labelHiddenClass = iconOnlyBelow === "xl" ? "hidden xl:inline" :
-                          iconOnlyBelow === "lg" ? "hidden lg:inline" :
-                          iconOnlyBelow === "md" ? "hidden md:inline" :
-                          iconOnlyBelow === "sm" ? "hidden sm:inline" : "";
+  // Determine smooth transition classes based on breakpoint
+  const labelTransitionClass = iconOnlyBelow === "xl" ? "w-0 xl:w-auto max-h-0 xl:max-h-10 opacity-0 xl:opacity-100 translate-y-[-4px] xl:translate-y-0" :
+                                iconOnlyBelow === "lg" ? "w-0 lg:w-auto max-h-0 lg:max-h-10 opacity-0 lg:opacity-100 translate-y-[-4px] lg:translate-y-0" :
+                                iconOnlyBelow === "md" ? "w-0 md:w-auto max-h-0 md:max-h-10 opacity-0 md:opacity-100 translate-y-[-4px] md:translate-y-0" :
+                                iconOnlyBelow === "sm" ? "w-0 sm:w-auto max-h-0 sm:max-h-10 opacity-0 sm:opacity-100 translate-y-[-4px] sm:translate-y-0" : "";
 
   // Icon-only mode uses padding, full mode uses px-3 py-1.5
   const triggerClass = cn(
     "rounded-full border bg-background/60 backdrop-blur",
-    iconOnlyBelow ? "p-2 xl:px-3 xl:py-1.5" : "px-3 py-1.5",
-    "text-sm hover:bg-muted transition flex items-center gap-2 font-normal"
+    iconOnlyBelow ? "px-2 py-2 xl:px-3 xl:py-1.5" : "px-3 py-1.5",
+    "text-sm hover:bg-muted transition-all duration-300 ease-in-out flex items-center justify-center font-normal overflow-hidden",
+    iconOnlyBelow ? "gap-0 xl:gap-2" : "gap-2"
   );
 
   return (
@@ -65,8 +66,8 @@ export default function ProfileMenu({ iconOnlyBelow }: { iconOnlyBelow?: "sm" | 
             // keep clickable even while auth is loading
             aria-busy={loading || undefined}
           >
-            <User className="h-4 w-4" />
-            <span className={labelHiddenClass || undefined}>Profile</span>
+            <User className="h-4 w-4 shrink-0" />
+            <span className={cn(labelTransitionClass, "transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden")}>Profile</span>
           </button>
         </DropdownMenuTrigger>
 

@@ -86,13 +86,13 @@ export function Navigation() {
       )}
     >
       <div className="max-w-7xl mx-auto">
-        {/* Mobile: Stack vertically */}
-        <div className="flex flex-col gap-2 md:hidden">
+        {/* Mobile/Tablet: Responsive layout with smooth transition */}
+        <div className="flex flex-col gap-2 md:hidden transition-all duration-300 ease-in-out">
           {/* Row 1: Brand + Right Controls */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between min-h-[40px]">
             <Link
               href={isApp ? "/quran" : "/#home"}
-              className="rounded-full px-3 py-1 font-semibold tracking-tight hover:opacity-90 transition text-sm"
+              className="rounded-full px-3 py-1 font-semibold tracking-tight hover:opacity-90 transition-all duration-300 ease-in-out text-[clamp(0.75rem,3vw,0.875rem)]"
               aria-label="Quran & Sunnah Home"
             >
               Quran &amp; Sunnah
@@ -106,7 +106,7 @@ export function Navigation() {
                 <>
                   <Link
                     href="/search"
-                    className="rounded-full border bg-background/60 backdrop-blur p-2 hover:bg-muted transition"
+                    className="rounded-full border bg-background/60 backdrop-blur p-2 hover:bg-muted transition-all duration-300 ease-in-out"
                     title="Search"
                   >
                     <Search className="h-4 w-4" />
@@ -114,7 +114,7 @@ export function Navigation() {
 
                   <Link
                     href="/settings"
-                    className="rounded-full border bg-background/60 backdrop-blur p-2 hover:bg-muted transition"
+                    className="rounded-full border bg-background/60 backdrop-blur p-2 hover:bg-muted transition-all duration-300 ease-in-out"
                     title="Settings"
                   >
                     <Gear className="h-4 w-4" />
@@ -127,11 +127,11 @@ export function Navigation() {
             </div>
           </div>
 
-          {/* Row 2: Navigation Menu */}
+          {/* Row 2: Navigation Menu - slides down smoothly */}
           {!isUtility && (
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-center animate-slide-down">
               <NavigationMenu>
-                <NavigationMenuList className="whitespace-nowrap bg-gradient-to-r from-foreground/5 via-foreground/10 to-foreground/5 backdrop-blur-md px-3 py-1.5 rounded-full border border-foreground/10">
+                <NavigationMenuList className="whitespace-nowrap bg-gradient-to-r from-foreground/5 via-foreground/10 to-foreground/5 backdrop-blur-md px-3 py-1.5 rounded-full border border-foreground/10 transition-all duration-300 ease-in-out">
                   {links.map(({ href, label, icon: Icon }) => {
                     const active =
                       pathname === href ||
@@ -142,7 +142,7 @@ export function Navigation() {
                         <NavigationMenuLink
                           href={href}
                           className={cn(
-                            "flex items-center gap-1.5 text-xs transition-colors whitespace-nowrap",
+                            "flex items-center gap-1.5 text-xs transition-all duration-300 ease-in-out whitespace-nowrap",
                             active ? "text-foreground" : "text-foreground/80 hover:text-foreground"
                           )}
                         >
@@ -158,51 +158,51 @@ export function Navigation() {
           )}
         </div>
 
-        {/* Desktop: Flexible grid that prevents overlap */}
-        <div className="hidden md:grid grid-cols-[auto_1fr_auto] items-center gap-4">
+        {/* Desktop: Absolute center for navigation - fixed height container */}
+        <div className="hidden md:flex items-center justify-between relative w-full">
           {/* brand (left) */}
-          <div className="flex items-center shrink-0">
+          <div className="flex items-center shrink-0 z-20">
             <Link
               href={isApp ? "/quran" : "/#home"}
-              className="rounded-full px-3 py-1 font-semibold tracking-tight hover:opacity-90 transition text-sm xl:text-base whitespace-nowrap"
+              className="rounded-full px-3 py-1 font-semibold tracking-tight hover:opacity-90 transition-all duration-300 ease-in-out text-sm xl:text-base whitespace-nowrap"
               aria-label="Quran & Sunnah Home"
             >
               Quran &amp; Sunnah
             </Link>
           </div>
 
-          {/* centered island (hidden on utility pages) */}
-          <div className="flex items-center justify-center min-w-0">
-            {!isUtility && (
+          {/* centered island - absolutely centered with higher z-index */}
+          {!isUtility && (
+            <div className="absolute left-1/2 -translate-x-1/2 z-10 pointer-events-none">
               <NavigationMenu>
-                <NavigationMenuList className="whitespace-nowrap bg-gradient-to-r from-foreground/5 via-foreground/10 to-foreground/5 backdrop-blur-md px-3 lg:px-4 xl:px-5 py-2 rounded-full border border-foreground/10">
+                <NavigationMenuList className="pointer-events-auto whitespace-nowrap bg-gradient-to-r from-foreground/5 via-foreground/10 to-foreground/5 backdrop-blur-md px-[clamp(0.75rem,1.5vw,1.25rem)] py-2 rounded-full border border-foreground/10 transition-all duration-300 ease-in-out">
                   {links.map(({ href, label, icon: Icon }) => {
                     const active =
                       pathname === href ||
                       pathname.startsWith(href + "/") ||
                       (href !== "/" && pathname.startsWith(href));
                     return (
-                      <NavigationMenuItem key={href} className="px-1.5 lg:px-2 xl:px-3">
+                      <NavigationMenuItem key={href} className="px-[clamp(0.375rem,1vw,0.75rem)] transition-all duration-300 ease-in-out">
                         <NavigationMenuLink
                           href={href}
                           className={cn(
-                            "flex items-center gap-1.5 lg:gap-2 text-xs lg:text-sm transition-colors whitespace-nowrap",
+                            "flex items-center gap-[clamp(0.375rem,0.8vw,0.5rem)] text-[clamp(0.75rem,0.9vw,0.875rem)] transition-all duration-300 ease-in-out whitespace-nowrap",
                             active ? "text-foreground" : "text-foreground/80 hover:text-foreground"
                           )}
                         >
-                          <Icon className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
-                          <span>{label}</span>
+                          <Icon className="w-[clamp(0.875rem,1vw,1rem)] h-[clamp(0.875rem,1vw,1rem)] transition-all duration-300 ease-in-out" />
+                          <span className="transition-all duration-300 ease-in-out">{label}</span>
                         </NavigationMenuLink>
                       </NavigationMenuItem>
                     );
                   })}
                 </NavigationMenuList>
               </NavigationMenu>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* right controls */}
-          <div className="flex items-center justify-end gap-1.5 lg:gap-2 shrink-0">
+          <div className="flex items-center justify-end gap-1.5 lg:gap-2 shrink-0 z-20">
             {isLanding ? (
               <Button asChild size="sm" className="font-normal text-xs lg:text-sm">
                 <Link href="/quran">Open App</Link>
@@ -211,20 +211,20 @@ export function Navigation() {
               <>
                 <Link
                   href="/search"
-                  className="rounded-full border bg-background/60 backdrop-blur p-2 xl:px-3 xl:py-1.5 text-sm hover:bg-muted transition flex items-center gap-2 font-normal"
+                  className="group rounded-full border bg-background/60 backdrop-blur px-2 py-2 xl:px-3 xl:py-1.5 text-sm hover:bg-muted transition-all duration-300 ease-in-out flex items-center justify-center gap-0 xl:gap-2 font-normal overflow-hidden"
                   title="Search"
                 >
-                  <Search className="h-4 w-4" />
-                  <span className="hidden xl:inline">Search</span>
+                  <Search className="h-4 w-4 shrink-0" />
+                  <span className="w-0 xl:w-auto max-h-0 xl:max-h-10 opacity-0 xl:opacity-100 translate-y-[-4px] xl:translate-y-0 transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden">Search</span>
                 </Link>
 
                 <Link
                   href="/settings"
-                  className="rounded-full border bg-background/60 backdrop-blur p-2 xl:px-3 xl:py-1.5 text-sm hover:bg-muted transition flex items-center gap-2 font-normal"
+                  className="group rounded-full border bg-background/60 backdrop-blur px-2 py-2 xl:px-3 xl:py-1.5 text-sm hover:bg-muted transition-all duration-300 ease-in-out flex items-center justify-center gap-0 xl:gap-2 font-normal overflow-hidden"
                   title="Settings"
                 >
-                  <Gear className="h-4 w-4" />
-                  <span className="hidden xl:inline">Settings</span>
+                  <Gear className="h-4 w-4 shrink-0" />
+                  <span className="w-0 xl:w-auto max-h-0 xl:max-h-10 opacity-0 xl:opacity-100 translate-y-[-4px] xl:translate-y-0 transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden">Settings</span>
                 </Link>
 
                 {/* Profile dropdown (auth-gated actions inside) */}
