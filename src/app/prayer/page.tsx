@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MapPin, Compass, LocateFixed, Clock } from "lucide-react";
+import { MapPin, Compass, LocateFixed, Clock, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -15,6 +15,13 @@ import {
 } from "@/lib/prayer";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { saveNotificationPrefs } from "@/lib/cloud";
+import dynamic from "next/dynamic";
+
+// Lazy load AR component (only loads when needed)
+const QiblaAR = dynamic(() => import("@/components/prayer/QiblaAR"), {
+  ssr: false,
+  loading: () => <div className="text-center text-sm text-muted-foreground">Loading AR...</div>,
+});
 
 type TabKey = "prayer" | "qibla";
 
@@ -42,6 +49,7 @@ export default function PrayerPage() {
   // Qibla compass
   const [bearing, setBearing] = useState<number | null>(null);
   const [deviceHeading, setDeviceHeading] = useState<number | null>(null);
+  const [showAR, setShowAR] = useState(false);
   const listenRef = useRef(false);
   const { user } = useAuth();
 
@@ -280,6 +288,22 @@ export default function PrayerPage() {
                 </div>
               </div>
 
+              {/* AR Camera Button - Mobile Only */}
+              <div className="mt-4 md:hidden">
+                <Button
+                  onClick={() => setShowAR(true)}
+                  size="lg"
+                  className="gap-2"
+                  variant="default"
+                >
+                  <Camera className="h-5 w-5" />
+                  Open AR Camera View
+                </Button>
+                <p className="mt-2 text-xs text-muted-foreground text-center">
+                  Use your camera to find Qibla direction with AR overlay
+                </p>
+              </div>
+
               {/* Simple arrow compass */}
               <div className="mt-6 h-56 w-56 rounded-full border flex items-center justify-center relative">
                 <div className="absolute inset-3 rounded-full border border-dashed opacity-40" />
@@ -302,6 +326,11 @@ export default function PrayerPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* AR Qibla Finder - Render when activated */}
+      {showAR && bearing !== null && (
+        <QiblaAR bearing={bearing} onClose={() => setShowAR(false)} />
       )}
     </div>
   );
