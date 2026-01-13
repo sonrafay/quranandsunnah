@@ -42,7 +42,7 @@ export default function QuranIndexClient({ chapters }: { chapters: Chapter[] }) 
           <Link
             key={c.id}
             href={`/quran/${c.id}`}
-            className="group rounded-xl border bg-card/50 hover:bg-card/70 transition-all duration-500 ease-in-out p-4 animate-fade-in"
+            className="group rounded-xl border border-foreground/20 bg-card/80 hover:bg-card/90 transition-colors p-4 animate-fade-in"
             style={{ animationDelay: `${index * 20}ms` }}
           >
             <div className="flex items-center justify-between gap-4">

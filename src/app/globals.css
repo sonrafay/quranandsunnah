@@ -21,7 +21,7 @@ html {
 
 /* Theme tokens */
 @layer base {
-  :root {
+:root {
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
     --card: 0 0% 100%;
@@ -42,6 +42,8 @@ html {
     --input: 0 0% 89.8%;
     --ring: 0 0% 0%;
     --radius: 0.5rem;
+    --theme-transition-duration: 120ms;
+    --theme-transition-easing: cubic-bezier(0.4, 0.0, 0.2, 1);
   }
 
   .dark {
@@ -64,6 +66,28 @@ html {
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 100%;
+  }
+
+  .sepia {
+    --background: 35 4% 98%;
+    --foreground: 0 0% 0%;
+    --card: 35 4% 96%;
+    --card-foreground: 0 0% 0%;
+    --popover: 35 4% 98%;
+    --popover-foreground: 0 0% 0%;
+    --primary: 0 0% 0%;
+    --primary-foreground: 35 4% 98%;
+    --secondary: 35 4% 95%;
+    --secondary-foreground: 0 0% 0%;
+    --muted: 35 4% 94%;
+    --muted-foreground: 0 0% 0%;
+    --accent: 35 4% 96%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 62.8% 45%;
+    --destructive-foreground: 35 4% 98%;
+    --border: 42 16% 84%;
+    --input: 42 16% 84%;
+    --ring: 38 8% 27%;
   }
 }
 
@@ -92,19 +116,48 @@ html {
 
 /* Smooth theme transitions - applied directly to root for consistency */
 html {
-  transition: background-color 198ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-easing);
 }
 
 body {
-  transition: background-color 198ms cubic-bezier(0.4, 0, 0.2, 1),
-              color 198ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-easing),
+              color var(--theme-transition-duration) var(--theme-transition-easing);
 }
 
 /* Apply smooth transitions to common elements */
 * {
-  transition: background-color 198ms cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 198ms cubic-bezier(0.4, 0, 0.2, 1),
-              color 198ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-easing),
+              border-color var(--theme-transition-duration) var(--theme-transition-easing),
+              color var(--theme-transition-duration) var(--theme-transition-easing);
+}
+
+.sepia h1,
+.sepia h2,
+.sepia h3,
+.sepia h4,
+.sepia h5,
+.sepia h6 {
+  color: hsl(var(--primary));
+}
+
+.mode-toggle-icon {
+  color: hsl(var(--foreground));
+  opacity: 0.78;
+  transition: color var(--theme-transition-duration) var(--theme-transition-easing),
+              opacity var(--theme-transition-duration) var(--theme-transition-easing),
+              fill var(--theme-transition-duration) var(--theme-transition-easing),
+              stroke var(--theme-transition-duration) var(--theme-transition-easing);
+}
+
+.sepia .mode-toggle-icon {
+  color: hsl(var(--primary));
+  opacity: 0.82;
+}
+
+.mode-toggle-button {
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-easing),
+              border-color var(--theme-transition-duration) var(--theme-transition-easing),
+              color var(--theme-transition-duration) var(--theme-transition-easing);
 }
 
 /* Respect reduced motion preference */

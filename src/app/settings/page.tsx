@@ -14,7 +14,7 @@ type Settings = {
 };
 
 export default function SettingsPage() {
-  const { theme, setTheme, systemTheme } = useThemeTransition();
+  const { theme, setTheme } = useThemeTransition();
 
   const [pref, setPref] = useState<Settings>({
     wordByWord: { translation: true, transliteration: false, recitation: false },
@@ -51,13 +51,13 @@ export default function SettingsPage() {
         <h2 className="font-semibold">Theme</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {[
-            { key: "system", label: "Auto" },
-            { key: "light",  label: "Light" },
             { key: "dark",   label: "Dark"  },
+            { key: "light",  label: "Light" },
+            { key: "sepia",  label: "Sepia" },
           ].map(({ key, label }) => (
             <Button
               key={key}
-              variant={theme === key || (key === "system" && theme === "system") ? "default" : "outline"}
+              variant={theme === key ? "default" : "outline"}
               size="sm"
               onClick={() => setTheme(key as any)}
             >
@@ -65,7 +65,7 @@ export default function SettingsPage() {
             </Button>
           ))}
           <div className="text-xs text-muted-foreground self-center ml-2">
-            Current: {theme} {theme === "system" ? `(${systemTheme})` : ""}
+            Current: {theme}
           </div>
         </div>
       </section>
