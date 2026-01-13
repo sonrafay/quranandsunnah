@@ -106,7 +106,7 @@ export function Navigation() {
                 <>
                   <Link
                     href="/search"
-                    className="rounded-full border bg-background/60 backdrop-blur p-2 hover:bg-muted transition-all duration-300 ease-in-out"
+                    className="glass-surface glass-interactive rounded-full p-2 transition-all duration-300 ease-in-out"
                     title="Search"
                   >
                     <Search className="h-4 w-4" />
@@ -114,7 +114,7 @@ export function Navigation() {
 
                   <Link
                     href="/settings"
-                    className="rounded-full border bg-background/60 backdrop-blur p-2 hover:bg-muted transition-all duration-300 ease-in-out"
+                    className="glass-surface glass-interactive rounded-full p-2 transition-all duration-300 ease-in-out"
                     title="Settings"
                   >
                     <Gear className="h-4 w-4" />
@@ -131,7 +131,7 @@ export function Navigation() {
           {!isUtility && (
             <div className="flex items-center justify-center animate-slide-down">
               <NavigationMenu>
-                <NavigationMenuList className="whitespace-nowrap bg-gradient-to-r from-foreground/5 via-foreground/10 to-foreground/5 backdrop-blur-md px-3 py-1.5 rounded-full border border-foreground/10 transition-all duration-300 ease-in-out">
+                <NavigationMenuList className="glass-surface rounded-full px-3 py-1.5 whitespace-nowrap transition-all duration-300 ease-in-out">
                   {links.map(({ href, label, icon: Icon }) => {
                     const active =
                       pathname === href ||
@@ -175,7 +175,7 @@ export function Navigation() {
           {!isUtility && (
             <div className="absolute left-1/2 -translate-x-1/2 z-10 pointer-events-none">
               <NavigationMenu>
-                <NavigationMenuList className="pointer-events-auto whitespace-nowrap bg-gradient-to-r from-foreground/5 via-foreground/10 to-foreground/5 backdrop-blur-md px-[clamp(0.75rem,1.5vw,1.25rem)] py-2 rounded-full border border-foreground/10 transition-all duration-300 ease-in-out">
+                <NavigationMenuList className="glass-surface pointer-events-auto whitespace-nowrap px-[clamp(0.75rem,1.5vw,1.25rem)] py-2 rounded-full transition-all duration-300 ease-in-out">
                   {links.map(({ href, label, icon: Icon }) => {
                     const active =
                       pathname === href ||
@@ -211,7 +211,7 @@ export function Navigation() {
               <>
                 <Link
                   href="/search"
-                  className="group rounded-full border bg-background/60 backdrop-blur px-2 py-2 xl:px-3 xl:py-1.5 text-sm hover:bg-muted transition-all duration-300 ease-in-out flex items-center justify-center gap-0 xl:gap-2 font-normal overflow-hidden"
+                  className="group glass-surface glass-interactive rounded-full px-2 py-2 xl:px-3 xl:py-1.5 text-sm transition-all duration-300 ease-in-out flex items-center justify-center gap-0 xl:gap-2 font-normal overflow-hidden"
                   title="Search"
                 >
                   <Search className="h-4 w-4 shrink-0" />
@@ -220,7 +220,7 @@ export function Navigation() {
 
                 <Link
                   href="/settings"
-                  className="group rounded-full border bg-background/60 backdrop-blur px-2 py-2 xl:px-3 xl:py-1.5 text-sm hover:bg-muted transition-all duration-300 ease-in-out flex items-center justify-center gap-0 xl:gap-2 font-normal overflow-hidden"
+                  className="group glass-surface glass-interactive rounded-full px-2 py-2 xl:px-3 xl:py-1.5 text-sm transition-all duration-300 ease-in-out flex items-center justify-center gap-0 xl:gap-2 font-normal overflow-hidden"
                   title="Settings"
                 >
                   <Gear className="h-4 w-4 shrink-0" />

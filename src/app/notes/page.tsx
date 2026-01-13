@@ -123,7 +123,7 @@ export default function NotesPage() {
               return (
                 <div
                   key={n.keyRef}
-                  className="rounded-xl border p-4 bg-background/60 hover:bg-muted/40 transition"
+                  className="rounded-xl glass-surface glass-readable glass-interactive p-4 transition"
                 >
                   <div className="flex items-center justify-between">
                     <div className="text-sm opacity-80">

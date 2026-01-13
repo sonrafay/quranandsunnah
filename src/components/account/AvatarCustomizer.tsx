@@ -63,7 +63,7 @@ export default function AvatarCustomizer({
   }
 
   return (
-    <section className="rounded-2xl border bg-background/60 p-6 space-y-4">
+    <section className="rounded-2xl glass-surface glass-readable p-6 space-y-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Avatar style</h2>
@@ -91,7 +91,7 @@ export default function AvatarCustomizer({
                   className={cn(
                     "rounded-xl border p-4 text-left text-sm transition",
                     active ? "border-primary" : "border-muted-foreground/20",
-                    unlocked ? "bg-muted/20 hover:bg-muted/30" : "opacity-50"
+                    unlocked ? "glass-surface glass-readable glass-interactive" : "opacity-50"
                   )}
                 >
                   <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export default function AvatarCustomizer({
                   className={cn(
                     "rounded-xl border p-3 text-center text-xs transition",
                     active ? "border-primary" : "border-muted-foreground/20",
-                    unlocked ? "bg-muted/20 hover:bg-muted/30" : "opacity-50"
+                    unlocked ? "glass-surface glass-readable glass-interactive" : "opacity-50"
                   )}
                 >
                   <div className="font-medium">{tier}</div>

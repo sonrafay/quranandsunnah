@@ -20,7 +20,7 @@ export default function SocialCard({
   const [open, setOpen] = useState(false);
 
   return (
-    <section className="rounded-xl border bg-background/60 p-5 space-y-4">
+    <section className="rounded-xl glass-surface glass-readable p-5 space-y-4">
       <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-lg font-semibold">Connections</h2>
@@ -61,7 +61,7 @@ export default function SocialCard({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
+            <div className="flex items-center justify-between rounded-lg glass-surface glass-readable px-3 py-2">
               <div>
                 <div className="text-sm font-medium">Share streak</div>
                 <div className="text-xs text-muted-foreground">Default off</div>
@@ -73,7 +73,7 @@ export default function SocialCard({
                 }
               />
             </div>
-            <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
+            <div className="flex items-center justify-between rounded-lg glass-surface glass-readable px-3 py-2">
               <div>
                 <div className="text-sm font-medium">Receive reminders</div>
                 <div className="text-xs text-muted-foreground">Default off</div>
@@ -85,7 +85,7 @@ export default function SocialCard({
                 }
               />
             </div>
-            <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
+            <div className="flex items-center justify-between rounded-lg glass-surface glass-readable px-3 py-2">
               <div>
                 <div className="text-sm font-medium">Share online status</div>
                 <div className="text-xs text-muted-foreground">Default off</div>
@@ -110,7 +110,7 @@ export default function SocialCard({
               {connections.map((connection) => (
                 <div
                   key={connection.id}
-                  className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
+                  className="flex items-center justify-between rounded-lg glass-surface glass-readable px-3 py-2 text-sm"
                 >
                   <span>@{connection.handle}</span>
                   <span className="text-muted-foreground">
@@ -126,7 +126,7 @@ export default function SocialCard({
           </div>
         </>
       ) : (
-        <div className="rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
+        <div className="rounded-lg glass-surface glass-readable p-4 text-sm text-muted-foreground">
           Connections are closed for now. Open this panel to manage friends and privacy.
         </div>
       )}

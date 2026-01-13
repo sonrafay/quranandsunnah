@@ -43,9 +43,9 @@ export default function ProfileMenu({ iconOnlyBelow }: { iconOnlyBelow?: "sm" | 
 
   // Icon-only mode uses padding, full mode uses px-3 py-1.5
   const triggerClass = cn(
-    "rounded-full border bg-background/60 backdrop-blur",
+    "glass-surface glass-interactive rounded-full",
     iconOnlyBelow ? "px-2 py-2 xl:px-3 xl:py-1.5" : "px-3 py-1.5",
-    "text-sm hover:bg-muted transition-all duration-300 ease-in-out flex items-center justify-center font-normal overflow-hidden",
+    "text-sm transition-all duration-300 ease-in-out flex items-center justify-center font-normal overflow-hidden",
     iconOnlyBelow ? "gap-0 xl:gap-2" : "gap-2"
   );
 

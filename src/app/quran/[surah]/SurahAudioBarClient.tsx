@@ -131,7 +131,7 @@ export default function SurahAudioBarClient({
         show ? "" : "pointer-events-none opacity-0"
       } transition`}
     >
-      <div className="w-[min(980px,93vw)] rounded-2xl border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-lg p-3">
+      <div className="w-[min(980px,93vw)] rounded-2xl glass-surface p-3">
         <div className="flex items-center gap-3">
           <Button
             variant="outline"

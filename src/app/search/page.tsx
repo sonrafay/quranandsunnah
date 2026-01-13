@@ -49,7 +49,11 @@ export default function SearchPage() {
           <div className="mt-3 space-y-2">
             {surahResults.length === 0 && <p className="text-sm text-muted-foreground">No results yet.</p>}
             {surahResults.map((s) => (
-              <Link key={s.number} href={`/quran/${s.number}`} className="block rounded-lg border p-3 hover:bg-muted/40">
+              <Link
+                key={s.number}
+                href={`/quran/${s.number}`}
+                className="block rounded-lg glass-surface glass-readable glass-interactive p-3 transition hover:scale-[1.01]"
+              >
                 <div className="text-sm opacity-70">#{s.number}</div>
                 <div className="font-medium">{s.englishName}</div>
                 {s.arabicName && <div className="text-sm" dir="rtl">{s.arabicName}</div>}
@@ -63,7 +67,11 @@ export default function SearchPage() {
           <div className="mt-3 space-y-2">
             {hadithResults.length === 0 && <p className="text-sm text-muted-foreground">No results yet.</p>}
             {hadithResults.map((c) => (
-              <Link key={c.id} href={`/hadith/${c.id}`} className="block rounded-lg border p-3 hover:bg-muted/40">
+              <Link
+                key={c.id}
+                href={`/hadith/${c.id}`}
+                className="block rounded-lg glass-surface glass-readable glass-interactive p-3 transition hover:scale-[1.01]"
+              >
                 <div className="font-medium">{c.englishName}</div>
                 {c.arabicName && <div className="text-sm opacity-80" dir="rtl">{c.arabicName}</div>}
               </Link>

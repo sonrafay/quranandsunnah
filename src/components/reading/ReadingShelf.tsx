@@ -71,7 +71,7 @@ export default function ReadingShelf({ kind }: Props) {
   return (
     <section className="mt-8 space-y-6" aria-label="Reading shelf">
       {/* Continue card */}
-      <div className="rounded-2xl border p-4 md:p-6 bg-background/60 backdrop-blur flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="rounded-2xl glass-surface glass-readable p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-3">
         <div>
           <div className="text-sm text-muted-foreground">Continue reading</div>
           <div className="text-lg md:text-xl font-semibold">{last ? lastLabel : "Nothing yet"}</div>
@@ -89,7 +89,7 @@ export default function ReadingShelf({ kind }: Props) {
 
       {/* Bookmarks + Notes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl border p-4 bg-background/50">
+        <div className="rounded-xl glass-surface glass-readable p-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">Bookmarks</h3>
             {bookmarks.length > 0 && (
@@ -127,7 +127,7 @@ export default function ReadingShelf({ kind }: Props) {
           )}
         </div>
 
-        <div className="rounded-xl border p-4 bg-background/50">
+        <div className="rounded-xl glass-surface glass-readable p-4">
           <h3 className="font-semibold">Notes</h3>
           <p className="text-xs text-muted-foreground mt-1">Personal notes (saved locally).</p>
           <textarea

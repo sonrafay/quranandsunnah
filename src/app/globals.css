@@ -44,6 +44,16 @@ html {
     --radius: 0.5rem;
     --theme-transition-duration: 120ms;
     --theme-transition-easing: cubic-bezier(0.4, 0.0, 0.2, 1);
+    --glass-blur-base: 10px;
+    --glass-blur-hover: 12px;
+    --glass-blur-readable: 4px;
+    --glass-opacity-base: 0.62;
+    --glass-opacity-hover: 0.68;
+    --glass-opacity-readable: 0.88;
+    --glass-saturation: 1.05;
+    --glass-edge-highlight: 0.38;
+    --glass-inner-shadow: 0.08;
+    --glass-drop-shadow: 0.12;
   }
 
   .dark {
@@ -66,6 +76,12 @@ html {
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 100%;
+    --glass-opacity-base: 0.4;
+    --glass-opacity-hover: 0.46;
+    --glass-opacity-readable: 0.78;
+    --glass-edge-highlight: 0.2;
+    --glass-inner-shadow: 0.38;
+    --glass-drop-shadow: 0.36;
   }
 
   .sepia {
@@ -88,6 +104,12 @@ html {
     --border: 42 16% 84%;
     --input: 42 16% 84%;
     --ring: 38 8% 27%;
+    --glass-opacity-base: 0.66;
+    --glass-opacity-hover: 0.72;
+    --glass-opacity-readable: 0.9;
+    --glass-edge-highlight: 0.4;
+    --glass-inner-shadow: 0.1;
+    --glass-drop-shadow: 0.14;
   }
 }
 
@@ -240,4 +262,51 @@ body[style*="margin-right"] {
 
 .animate-slide-down {
   animation: slide-down 0.3s ease-out forwards;
+}
+
+@layer components {
+  .glass-surface {
+    --glass-blur: var(--glass-blur-base);
+    --glass-opacity: var(--glass-opacity-base);
+    background-color: hsl(var(--background) / var(--glass-opacity));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / var(--glass-edge-highlight)),
+      inset 0 -1px 2px hsl(0 0% 0% / var(--glass-inner-shadow)),
+      0 10px 24px hsl(0 0% 0% / var(--glass-drop-shadow));
+    transition:
+      opacity var(--theme-transition-duration) var(--theme-transition-easing),
+      transform var(--theme-transition-duration) var(--theme-transition-easing),
+      backdrop-filter var(--theme-transition-duration) var(--theme-transition-easing),
+      background-color var(--theme-transition-duration) var(--theme-transition-easing),
+      box-shadow var(--theme-transition-duration) var(--theme-transition-easing);
+  }
+
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .glass-surface {
+      background-color: hsl(var(--background) / calc(var(--glass-opacity) - 0.06));
+    }
+  }
+
+  .glass-readable {
+    --glass-blur: var(--glass-blur-readable);
+    --glass-opacity: var(--glass-opacity-readable);
+  }
+
+  .glass-interactive {
+    will-change: transform, opacity, backdrop-filter;
+  }
+
+  .glass-interactive:hover {
+    --glass-opacity: var(--glass-opacity-hover);
+    --glass-blur: var(--glass-blur-hover);
+    transform: translateY(-1px);
+  }
+
+  .glass-sheet {
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / var(--glass-edge-highlight)),
+      inset 0 -1px 2px hsl(0 0% 0% / var(--glass-inner-shadow));
+  }
 }

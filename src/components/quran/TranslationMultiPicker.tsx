@@ -65,7 +65,7 @@ export default function TranslationMultiPicker({
       <button
         className={
           buttonClassName ||
-          "h-9 rounded-full border px-3 text-sm bg-background hover:bg-muted transition"
+          "h-9 rounded-full glass-surface glass-interactive px-3 text-sm transition"
         }
         onClick={() => setOpen((o) => !o)}
       >
@@ -80,12 +80,12 @@ export default function TranslationMultiPicker({
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <div className="absolute z-40 mt-2 w-[320px] rounded-xl border bg-background p-3 shadow-lg">
+          <div className="absolute z-40 mt-2 w-[320px] rounded-xl glass-surface glass-readable p-3">
             <div className="mb-2">
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search (e.g. English, Urdu, Haleem)…"
+                placeholder="Search (e.g. English, Urdu, Haleem)"
                 className="w-full h-9 rounded-md border bg-background px-3 text-sm"
               />
             </div>

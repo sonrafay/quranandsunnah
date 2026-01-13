@@ -262,7 +262,7 @@ export default async function SurahPage({
               data-ayah={v.n} // harmless helper attribute
               className="
                 relative scroll-mt-28 md:scroll-mt-36
-                rounded-2xl border bg-background/60
+                rounded-2xl glass-surface glass-readable
                 p-5 md:p-6 pl-14 md:pl-16
                 min-h-44 md:min-h-52
                 flex flex-col justify-center

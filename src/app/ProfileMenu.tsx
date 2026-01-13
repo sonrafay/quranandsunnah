@@ -38,8 +38,8 @@ export default function ProfileMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
-          className="font-normal rounded-full border bg-background/60 backdrop-blur px-3 py-1.5 text-sm hover:bg-muted transition flex items-center gap-2"
+          variant="ghost"
+          className="font-normal rounded-full glass-surface glass-interactive px-3 py-1.5 text-sm transition flex items-center gap-2"
         >
           <User className="h-4 w-4" />
           <span>Profile</span>

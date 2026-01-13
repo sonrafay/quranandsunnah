@@ -377,7 +377,7 @@ export default function AudioPlayerBar(props: Props) {
   return (
     <div
       className={[
-        "fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t",
+        "fixed bottom-0 inset-x-0 z-40 glass-surface glass-sheet",
         "transition-transform duration-200",
         visible ? "translate-y-0" : "translate-y-full",
       ].join(" ")}

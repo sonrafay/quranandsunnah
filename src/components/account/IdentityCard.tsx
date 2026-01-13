@@ -28,7 +28,7 @@ export default function IdentityCard({
     (!canEditHandle && handle !== (profile.handle || ""));
 
   return (
-    <section className="rounded-xl border bg-background/60 p-5 space-y-4">
+    <section className="rounded-xl glass-surface glass-readable p-5 space-y-4">
       <header>
         <h2 className="text-lg font-semibold">Identity</h2>
         <p className="text-sm text-muted-foreground">

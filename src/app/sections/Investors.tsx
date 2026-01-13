@@ -30,7 +30,7 @@ export function Sponsors({ id }: AnimatedProps) {
   return (
     <section
       id={id}
-      className="w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-foreground py-16"
+      className="w-full glass-surface glass-sheet text-foreground py-16"
     >
       <div className="container mx-auto px-4">
         <h2 className="text-center text-4xl font-bold mb-12 bg-gradient-to-r text-transparent bg-clip-text">
