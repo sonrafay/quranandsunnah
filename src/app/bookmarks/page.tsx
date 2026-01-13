@@ -139,8 +139,8 @@ export default function BookmarksPage() {
                 )
               }
               className={cn(
-                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm",
-                active ? "bg-muted" : "bg-background/60"
+                "inline-flex items-center gap-2 rounded-full glass-surface glass-interactive px-3 py-1.5 text-sm transition hover:scale-[1.02]",
+                active ? "glass-readable" : ""
               )}
             >
               <span className={cn("h-3 w-3 rounded-full", COLOR_META[c].dot)} />
@@ -168,7 +168,7 @@ export default function BookmarksPage() {
               return (
                 <div
                   key={r.id}
-                  className="rounded-xl border p-4 bg-background/60 hover:bg-muted/40 transition"
+                  className="rounded-xl glass-surface glass-readable glass-interactive p-4 transition"
                 >
                   <div className="flex items-center justify-between">
                     <div className="text-sm opacity-80">{labelLeft}</div>

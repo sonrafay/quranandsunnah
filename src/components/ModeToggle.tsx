@@ -97,7 +97,7 @@ export function ModeToggle() {
       onClick={onToggle}
       aria-label={`Switch to ${themeLabels[currentTheme as keyof typeof themeLabels] || "Light"} mode`}
       title={`Switch to ${themeLabels[currentTheme as keyof typeof themeLabels] || "Light"} mode`}
-      className="mode-toggle-button rounded-full border bg-background/60 backdrop-blur h-8 w-8 grid place-items-center hover:bg-muted transition-colors"
+      className="mode-toggle-button glass-surface glass-interactive rounded-full h-8 w-8 grid place-items-center"
     >
       {mounted ? getIcon() : null}
     </button>

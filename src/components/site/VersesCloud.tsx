@@ -117,7 +117,7 @@ export default function VersesCloud() {
               >
                 <motion.button
                   onClick={() => setOpen(isOpen ? null : i)}
-                  className="rounded-xl border bg-card/70 backdrop-blur-sm shadow-sm text-left cursor-pointer max-w-[18rem] sm:max-w-[19rem]"
+                  className="rounded-xl glass-surface glass-readable text-left cursor-pointer max-w-[18rem] sm:max-w-[19rem]"
                   layout
                   transition={{ type: "spring", stiffness: 220, damping: 24 }}
                   aria-expanded={isOpen}

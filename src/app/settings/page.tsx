@@ -47,7 +47,7 @@ export default function SettingsPage() {
       </header>
 
       {/* THEME */}
-      <section className="rounded-xl border p-4">
+      <section className="rounded-xl glass-surface glass-readable p-4">
         <h2 className="font-semibold">Theme</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {[
@@ -71,7 +71,7 @@ export default function SettingsPage() {
       </section>
 
       {/* QURAN FONT */}
-      <section className="rounded-xl border p-4">
+      <section className="rounded-xl glass-surface glass-readable p-4">
         <h2 className="font-semibold">Quran Font</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {(["Uthmani","IndoPak","Tajweed"] as const).map((k) => (
@@ -107,7 +107,7 @@ export default function SettingsPage() {
       </section>
 
       {/* WORD BY WORD */}
-      <section className="rounded-xl border p-4">
+      <section className="rounded-xl glass-surface glass-readable p-4">
         <h2 className="font-semibold">Word By Word</h2>
         <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
@@ -131,7 +131,7 @@ export default function SettingsPage() {
       </section>
 
       {/* TRANSLATION */}
-      <section className="rounded-xl border p-4">
+      <section className="rounded-xl glass-surface glass-readable p-4">
         <h2 className="font-semibold">Translation Language</h2>
         <select
           className="mt-3 w-full md:w-64 rounded-md border bg-background p-2"

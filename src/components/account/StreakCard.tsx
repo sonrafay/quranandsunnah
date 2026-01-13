@@ -4,7 +4,7 @@ import { Streak } from "@/lib/account/models";
 
 export default function StreakCard({ streak }: { streak: Streak }) {
   return (
-    <section className="rounded-xl border bg-background/60 p-5 space-y-4">
+    <section className="rounded-xl glass-surface glass-readable p-5 space-y-4">
       <header>
         <h2 className="text-lg font-semibold">Streak</h2>
         <p className="text-sm text-muted-foreground">
@@ -24,11 +24,11 @@ export default function StreakCard({ streak }: { streak: Streak }) {
           />
         </div>
         <div className="space-y-3 text-sm">
-          <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
+          <div className="flex items-center justify-between rounded-lg glass-surface glass-readable px-3 py-2">
             <span className="text-muted-foreground">Best streak</span>
             <span className="font-medium">{streak.best} days</span>
           </div>
-          <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
+          <div className="flex items-center justify-between rounded-lg glass-surface glass-readable px-3 py-2">
             <span className="text-muted-foreground">100+ days</span>
             <span className="font-medium">Animation unlock placeholder</span>
           </div>

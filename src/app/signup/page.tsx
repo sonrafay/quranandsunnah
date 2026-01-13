@@ -37,7 +37,7 @@ function SignUpPageContent() {
 
   return (
     <div className="min-h-[80vh] grid place-items-center px-4 pt-24">
-      <div className="w-full max-w-md rounded-2xl border bg-background/60 backdrop-blur p-6">
+      <div className="w-full max-w-md rounded-2xl glass-surface glass-readable p-6">
         <div className="text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Create account</h1>
           <p className="text-sm text-muted-foreground mt-1">Start saving bookmarks, notes, and progress.</p>

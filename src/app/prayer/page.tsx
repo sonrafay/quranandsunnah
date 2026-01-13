@@ -184,7 +184,7 @@ export default function PrayerPage() {
       <div className="mx-auto max-w-6xl px-6 sm:px-8 lg:px-12">
         {/* Segmented slider */}
         <div className="mx-auto max-w-md">
-        <div className="rounded-full border bg-background/60 backdrop-blur p-1 flex items-center gap-1">
+        <div className="rounded-full glass-surface p-1 flex items-center gap-1">
           {(["prayer", "qibla"] as TabKey[]).map((k) => (
             <button
               key={k}
@@ -227,7 +227,7 @@ export default function PrayerPage() {
             <>
               {/* Next prayer big card */}
               {next && (
-                <div className="rounded-2xl border p-6 md:p-8 bg-card/60 backdrop-blur text-center">
+                <div className="rounded-2xl glass-surface glass-readable p-6 md:p-8 text-center">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground">
                     <Clock className="h-4 w-4" />
                     <span className="text-sm">Next prayer</span>
@@ -257,7 +257,7 @@ export default function PrayerPage() {
                     <div
                       key={name}
                       className={cn(
-                        "rounded-xl border p-4 text-center bg-background/40 backdrop-blur",
+                        "rounded-xl glass-surface p-4 text-center",
                         isNext && "ring-1 ring-primary",
                         subtle && "opacity-90"
                       )}

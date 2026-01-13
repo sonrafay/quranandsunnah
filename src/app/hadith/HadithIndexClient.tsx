@@ -47,7 +47,7 @@ export default function HadithIndexClient() {
             <Link
               key={c.id}
               href={`/hadith/${c.id}`}
-              className="rounded-xl border p-4 hover:bg-muted/40 transition-all duration-500 ease-in-out animate-fade-in"
+              className="rounded-xl glass-surface glass-interactive p-4 transition-all duration-300 ease-in-out hover:-translate-y-[1px] hover:scale-[1.02] animate-fade-in"
               style={{ animationDelay: `${index * 20}ms` }}
             >
               <div className="flex items-center gap-2">

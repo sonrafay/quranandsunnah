@@ -60,7 +60,7 @@ export default function ProfileOverviewCard({
   }
 
   return (
-    <section className="rounded-2xl border bg-background/60 p-6 space-y-6">
+    <section className="rounded-2xl glass-surface glass-readable p-6 space-y-6">
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
           <AvatarDisplay avatar={avatar} size="lg" />
@@ -73,7 +73,7 @@ export default function ProfileOverviewCard({
         </div>
       </div>
 
-      <div className="rounded-xl border bg-muted/20 p-4 text-sm space-y-3">
+      <div className="rounded-xl glass-surface glass-readable p-4 text-sm space-y-3">
         {currentStreak >= 30 ? (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -134,7 +134,7 @@ export default function ProfileOverviewCard({
           {[0, 1, 2, 3].map((slot) => (
             <div
               key={`badge-slot-${slot}`}
-              className="rounded-lg border bg-muted/20 p-3 text-center text-xs"
+              className="rounded-lg glass-surface glass-readable p-3 text-center text-xs"
             >
               {slot === 0 ? (
                 <div className="space-y-1">
@@ -149,7 +149,7 @@ export default function ProfileOverviewCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border bg-muted/20 px-3 py-2 text-sm">
+      <div className="flex items-center justify-between rounded-lg glass-surface glass-readable px-3 py-2 text-sm">
         <span className="text-muted-foreground">User ID</span>
         <div className="flex items-center gap-2">
           <span className="font-mono">{profile.publicId || "pending"}</span>

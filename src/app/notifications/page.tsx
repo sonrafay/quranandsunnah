@@ -174,10 +174,10 @@ export default function NotificationsPage() {
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Web Push card */}
-        <section className="lg:col-span-3 rounded-2xl border bg-background/60 p-5">
+        <section className="lg:col-span-3 rounded-2xl glass-surface glass-readable p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="inline-grid h-10 w-10 place-items-center rounded-full bg-foreground/5">
+              <div className="inline-grid h-10 w-10 place-items-center rounded-full glass-surface glass-sheet">
                 <BellRing className="h-5 w-5" />
               </div>
               <div>
@@ -204,10 +204,10 @@ export default function NotificationsPage() {
         </section>
 
         {/* Prayer Reminders */}
-        <section className="rounded-2xl border bg-background/60 p-5">
+        <section className="rounded-2xl glass-surface glass-readable p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="inline-grid h-10 w-10 place-items-center rounded-full bg-foreground/5">
+              <div className="inline-grid h-10 w-10 place-items-center rounded-full glass-surface glass-sheet">
                 <Clock className="h-5 w-5" />
               </div>
               <div>
@@ -268,10 +268,10 @@ export default function NotificationsPage() {
         </section>
 
         {/* Friday Surah Al-Kahf */}
-        <section className="rounded-2xl border bg-background/60 p-5">
+        <section className="rounded-2xl glass-surface glass-readable p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="inline-grid h-10 w-10 place-items-center rounded-full bg-foreground/5">
+              <div className="inline-grid h-10 w-10 place-items-center rounded-full glass-surface glass-sheet">
                 <CalendarDays className="h-5 w-5" />
               </div>
               <div>

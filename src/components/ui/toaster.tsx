@@ -35,7 +35,7 @@ export function ToasterProvider({ children }: { children: React.ReactNode }) {
           <div
             key={t.id}
             className={cn(
-              "w-[min(340px,90vw)] rounded-xl border bg-background/90 backdrop-blur p-3 shadow-lg"
+              "w-[min(340px,90vw)] rounded-xl glass-surface glass-readable p-3"
             )}
           >
             {t.title && <div className="text-sm font-semibold">{t.title}</div>}
