@@ -11,6 +11,7 @@ import AudioPlayerBar, { AudioItem, Segment } from "@/components/quran/AudioPlay
 import SurahTitle from "@/components/quran/SurahTitle";
 import BookmarksLayer from "@/components/quran/BookmarksLayer";
 import QuranRecentTracker from "@/components/quran/QuranRecentTracker";
+import SurahSideNav from "@/components/quran/SurahSideNav";
 
 
 // ✅ Mount the compact left notes box (client-only)
@@ -234,6 +235,7 @@ export default async function SurahPage({
   return (
     <>
       <ScrollProgressBar height={2} />
+      <SurahSideNav current={data.chapter} />
 
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
         {/* HEADER */}

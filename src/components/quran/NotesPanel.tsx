@@ -183,6 +183,7 @@ export default function NotesPanel() {
         fixed z-[9999]
         rounded-md border bg-popover p-2 text-popover-foreground shadow-md
       "
+      data-no-swipe
       style={{
         top: pos.top,
         left: pos.left,
