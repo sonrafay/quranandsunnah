@@ -16,12 +16,13 @@ import SurahSideNav from "@/components/quran/SurahSideNav";
 
 // ✅ Mount the compact left notes box (client-only)
 const NotesPanel = dynamic(() => import("@/components/quran/NotesPanel"), { ssr: false });
+const SurahContentWrapper = dynamic(() => import("@/components/quran/SurahContentWrapper"), { ssr: false });
 
 type QFVerse = {
   verse_number: number;
   verse_key: string;
   text_uthmani?: string;
-  translations?: Array<{ text: string; resource_name?: string }>;
+  translations?: Array<{ text: string; resource_name?: string; resource_id?: number }>;
   audio?: { url?: string };
 };
 
@@ -158,10 +159,10 @@ function pickDefaultReciter(list: Reciter[]): number {
 
 async function fetchVerses(
   surah: string,
-  opts: { translationIds?: number[]; reciterId?: number }
+  opts: { translationIds?: number[]; transliterationIds?: number[]; reciterId?: number }
 ): Promise<{
   chapter: number;
-  verses: { n: number; key: string; arabic: string; translations: { text: string; source?: string }[]; audioUrl?: string }[];
+  verses: { n: number; key: string; arabic: string; translations: { text: string; source?: string; resourceId?: number }[]; transliterations: { text: string; source?: string; resourceId?: number }[]; audioUrl?: string }[];
 }> {
   const baseQuery: Record<string, string> = {
     page: "1",
@@ -169,7 +170,15 @@ async function fetchVerses(
     fields: "text_uthmani,verse_key,verse_number",
   };
   const query: Record<string, string> = { ...baseQuery };
-  if (opts.translationIds?.length) query.translations = opts.translationIds.join(",");
+
+  // Combine translation and transliteration IDs into single "translations" parameter
+  // The API treats them the same way - the response will indicate which is which via resource_id
+  const allResourceIds = [
+    ...(opts.translationIds || []),
+    ...(opts.transliterationIds || [])
+  ];
+
+  if (allResourceIds.length) query.translations = allResourceIds.join(",");
   if (opts.reciterId) query.audio = String(opts.reciterId);
 
   try {
@@ -177,13 +186,37 @@ async function fetchVerses(
       query,
       revalidate: 60 * 60,
     });
-    const verses = (data.verses ?? []).map((v) => ({
-      n: v.verse_number,
-      key: v.verse_key,
-      arabic: v.text_uthmani || "",
-      translations: v.translations?.map((t) => ({ text: t.text, source: t.resource_name })) ?? [],
-      audioUrl: absolutizeAudio(v.audio?.url),
-    }));
+
+    const transliterationIdSet = new Set(opts.transliterationIds || []);
+
+    const verses = (data.verses ?? []).map((v) => {
+      const translations: { text: string; source?: string; resourceId?: number }[] = [];
+      const transliterations: { text: string; source?: string; resourceId?: number }[] = [];
+
+      // Separate translations from transliterations based on resource_id
+      (v.translations ?? []).forEach((t) => {
+        const item = {
+          text: t.text,
+          source: t.resource_name,
+          resourceId: t.resource_id
+        };
+
+        if (t.resource_id && transliterationIdSet.has(t.resource_id)) {
+          transliterations.push(item);
+        } else {
+          translations.push(item);
+        }
+      });
+
+      return {
+        n: v.verse_number,
+        key: v.verse_key,
+        arabic: v.text_uthmani || "",
+        translations,
+        transliterations,
+        audioUrl: absolutizeAudio(v.audio?.url),
+      };
+    });
     return { chapter: Number(surah), verses };
   } catch {
     const fallback = await qfGet<{ verses: QFVerse[] }>(`/verses/by_chapter/${surah}`, {
@@ -195,6 +228,7 @@ async function fetchVerses(
       key: v.verse_key,
       arabic: v.text_uthmani || "",
       translations: [],
+      transliterations: [],
       audioUrl: undefined,
     }));
     return { chapter: Number(surah), verses };
@@ -210,7 +244,7 @@ export default async function SurahPage({
   searchParams,
 }: {
   params: { surah: string };
-  searchParams: { t?: string; r?: string };
+  searchParams: { t?: string; tl?: string; r?: string };
 }) {
   const surah = params.surah;
 
@@ -221,10 +255,11 @@ export default async function SurahPage({
   ]);
 
   const selectedT = parseIdList(searchParams?.t) ?? pickDefaultTranslation(catalog);
+  const selectedTL = parseIdList(searchParams?.tl); // Transliterations (optional, no default)
   const selectedR = parseIdList(searchParams?.r)?.[0] ?? pickDefaultReciter(reciters);
 
   const [data, surahAudio] = await Promise.all([
-    fetchVerses(surah, { translationIds: selectedT, reciterId: selectedR }),
+    fetchVerses(surah, { translationIds: selectedT, transliterationIds: selectedTL, reciterId: selectedR }),
     getSurahAudio(selectedR, surah),
   ]);
 
@@ -256,60 +291,7 @@ export default async function SurahPage({
         <NotesPanel />
 
         {/* Verses */}
-        <div className="space-y-8">
-          {data.verses.map((v) => (
-            <article
-              key={v.key}
-              id={`ayah-${v.n}`}
-              data-ayah={v.n} // harmless helper attribute
-              className="
-                relative scroll-mt-28 md:scroll-mt-36
-                rounded-2xl glass-surface glass-readable
-                p-5 md:p-6 pl-14 md:pl-16
-                min-h-44 md:min-h-52
-                flex flex-col justify-center
-              "
-            >
-              {/* Action column + tiny verse label */}
-              <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col items-center">
-                {/* Small "chapter:verse" label */}
-                <div className="mb-1 rounded px-1.5 py-0.5 text-[10px] leading-none font-medium text-foreground/70 bg-foreground/5">
-                  {data.chapter}:{v.n}
-                </div>
-
-                <VerseActions
-                  compact
-                  surah={data.chapter}
-                  ayah={v.n}
-                  textToCopy={[v.arabic, ...v.translations.map((t) => t.text)]
-                    .filter(Boolean)
-                    .join("\n")}
-                />
-              </div>
-
-
-              {/* Arabic */}
-              <div
-                className="font-quran text-3xl md:text-4xl leading-[2.6rem] md:leading-[3.1rem]"
-                dir="rtl"
-              >
-                {v.arabic}
-              </div>
-
-              {/* Translations (stacked) */}
-              {v.translations.map((t, i) => (
-                <div
-                  key={i}
-                  className="mt-4 text-base md:text-lg leading-relaxed text-muted-foreground"
-                  dir="ltr"
-                >
-                  {t.text}
-                  {t.source && <span className="ml-2 opacity-70">— {t.source}</span>}
-                </div>
-              ))}
-            </article>
-          ))}
-        </div>
+        <SurahContentWrapper chapter={data.chapter} verses={data.verses} />
 
         <SurahFooterNav current={data.chapter} />
       </div>

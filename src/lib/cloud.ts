@@ -50,12 +50,40 @@ export async function saveProfile(
   );
 }
 
-export async function saveSettings(uid: string, prefs: any) {
+export type ReadingSettingsDoc = {
+  theme?: "light" | "dark" | "sepia";
+  quranFont?: "Uthmani" | "IndoPak" | "Tajweed";
+  quranFontSize?: number; // 1.0 = base
+  translationFontSize?: number;
+  transliterationFontSize?: number;
+  overallScale?: number;
+  translationIds?: number[];
+  transliterationIds?: number[];
+  showTranslation?: boolean;
+  showTransliteration?: boolean;
+  updatedAt?: any;
+};
+
+const readingSettingsRef = (uid: string) => doc(db, "users", uid, "settings", "prefs");
+
+export async function getReadingSettings(uid: string): Promise<ReadingSettingsDoc | null> {
+  const snap = await getDoc(readingSettingsRef(uid));
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  console.log("[getReadingSettings] Raw Firestore snap.data():", data);
+  return data as ReadingSettingsDoc;
+}
+
+export async function saveReadingSettings(uid: string, prefs: Partial<ReadingSettingsDoc>) {
   await setDoc(
-    doc(db, "users", uid, "settings", "prefs"),
-    { prefs, updatedAt: serverTimestamp() },
+    readingSettingsRef(uid),
+    { ...prefs, prefs: deleteField(), updatedAt: serverTimestamp() },
     { merge: true }
   );
+}
+
+export async function saveSettings(uid: string, prefs: Partial<ReadingSettingsDoc>) {
+  await saveReadingSettings(uid, prefs);
 }
 
 export async function markQuranProgress(uid: string, surah: number, ayah?: number) {
