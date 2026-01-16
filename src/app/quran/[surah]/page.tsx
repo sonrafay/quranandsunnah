@@ -18,11 +18,26 @@ import SurahSideNav from "@/components/quran/SurahSideNav";
 const NotesPanel = dynamic(() => import("@/components/quran/NotesPanel"), { ssr: false });
 const SurahContentWrapper = dynamic(() => import("@/components/quran/SurahContentWrapper"), { ssr: false });
 
+type QFWord = {
+  transliteration?: { text?: string; language_name?: string };
+  translation?: { text?: string; language_name?: string };
+  code_v1?: string;  // QCF V1 glyph code
+  code_v2?: string;  // QCF V2 glyph code
+  v1_page?: number;  // Page number for V1 font
+  v2_page?: number;  // Page number for V2 font
+  qpc_uthmani_hafs?: string; // QPC glyph code
+  text_uthmani?: string; // Fallback text
+  char_type_name?: string; // "word" or "end" (for end of ayah marker)
+};
+
 type QFVerse = {
   verse_number: number;
   verse_key: string;
   text_uthmani?: string;
+  text_indopak?: string;
+  text_uthmani_tajweed?: string;
   translations?: Array<{ text: string; resource_name?: string; resource_id?: number }>;
+  words?: QFWord[];
   audio?: { url?: string };
 };
 
@@ -162,23 +177,28 @@ async function fetchVerses(
   opts: { translationIds?: number[]; transliterationIds?: number[]; reciterId?: number }
 ): Promise<{
   chapter: number;
-  verses: { n: number; key: string; arabic: string; translations: { text: string; source?: string; resourceId?: number }[]; transliterations: { text: string; source?: string; resourceId?: number }[]; audioUrl?: string }[];
+  verses: { n: number; key: string; arabic: string; textIndopak?: string; textTajweed?: string; words?: QFWord[]; translations: { text: string; source?: string; resourceId?: number }[]; transliterations: { text: string; source?: string; resourceId?: number }[]; audioUrl?: string }[];
 }> {
   const baseQuery: Record<string, string> = {
     page: "1",
     per_page: "300",
-    fields: "text_uthmani,verse_key,verse_number",
+    fields: "text_uthmani,text_indopak,text_uthmani_tajweed,verse_key,verse_number",
+    words: "true", // Always fetch word data for glyph-based fonts and word-by-word feature
+    // Include translation and transliteration for word-by-word hover feature
+    word_fields: "code_v1,code_v2,v1_page,v2_page,qpc_uthmani_hafs,text_uthmani,translation,transliteration,char_type_name",
   };
   const query: Record<string, string> = { ...baseQuery };
 
-  // Combine translation and transliteration IDs into single "translations" parameter
-  // The API treats them the same way - the response will indicate which is which via resource_id
-  const allResourceIds = [
-    ...(opts.translationIds || []),
-    ...(opts.transliterationIds || [])
-  ];
+  // Add translations parameter
+  if (opts.translationIds?.length) {
+    query.translations = opts.translationIds.join(",");
+  }
 
-  if (allResourceIds.length) query.translations = allResourceIds.join(",");
+  // Add language parameter for transliteration if needed
+  if (opts.transliterationIds?.length) {
+    query.language = opts.transliterationIds[0].toString();
+  }
+
   if (opts.reciterId) query.audio = String(opts.reciterId);
 
   try {
@@ -187,31 +207,44 @@ async function fetchVerses(
       revalidate: 60 * 60,
     });
 
-    const transliterationIdSet = new Set(opts.transliterationIds || []);
-
     const verses = (data.verses ?? []).map((v) => {
       const translations: { text: string; source?: string; resourceId?: number }[] = [];
       const transliterations: { text: string; source?: string; resourceId?: number }[] = [];
 
-      // Separate translations from transliterations based on resource_id
+      // Extract translations
       (v.translations ?? []).forEach((t) => {
-        const item = {
+        translations.push({
           text: t.text,
           source: t.resource_name,
           resourceId: t.resource_id
-        };
-
-        if (t.resource_id && transliterationIdSet.has(t.resource_id)) {
-          transliterations.push(item);
-        } else {
-          translations.push(item);
-        }
+        });
       });
+
+      // Extract word-by-word transliterations from words field
+      // ONLY if transliterationIds was explicitly provided (not empty)
+      if (opts.transliterationIds?.length && v.words && Array.isArray(v.words)) {
+        const translitText = v.words
+          .map(w => w.transliteration?.text || "")
+          .filter(Boolean)
+          .join(" ");
+
+        if (translitText) {
+          const langName = v.words.find(w => w.transliteration?.language_name)?.transliteration?.language_name;
+          transliterations.push({
+            text: translitText,
+            source: langName ? `${langName} Transliteration` : "English Transliteration",
+            resourceId: opts.transliterationIds[0]
+          });
+        }
+      }
 
       return {
         n: v.verse_number,
         key: v.verse_key,
         arabic: v.text_uthmani || "",
+        textIndopak: v.text_indopak,
+        textTajweed: v.text_uthmani_tajweed,
+        words: v.words,
         translations,
         transliterations,
         audioUrl: absolutizeAudio(v.audio?.url),
@@ -227,6 +260,9 @@ async function fetchVerses(
       n: v.verse_number,
       key: v.verse_key,
       arabic: v.text_uthmani || "",
+      textIndopak: v.text_indopak,
+      textTajweed: v.text_uthmani_tajweed,
+      words: v.words,
       translations: [],
       transliterations: [],
       audioUrl: undefined,

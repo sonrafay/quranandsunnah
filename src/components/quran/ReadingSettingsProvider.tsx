@@ -4,28 +4,59 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getReadingSettings, ReadingSettingsDoc } from "@/lib/cloud";
 
+type QuranFontVariant =
+  | "uthmani-simple"
+  | "indopak"
+  | "qcf-v1"
+  | "qcf-v2"
+  | "qcf-v4-tajweed"
+  | "qpc-uthmani-hafs";
+
 type ReadingSettings = {
-  quranFont: "Uthmani" | "IndoPak" | "Tajweed";
+  quranFont: QuranFontVariant;
   quranFontSize: number;
   translationFontSize: number;
   transliterationFontSize: number;
-  overallScale: number;
   translationIds: number[];
   transliterationIds: number[];
-  showTranslation: boolean;
-  showTransliteration: boolean;
+  // Word-by-word settings (null = disabled)
+  wordByWordTranslationId: number | null;
+  wordByWordTransliterationId: number | null;
 };
 
+function migrateLegacyFont(oldFont: any): QuranFontVariant {
+  if (oldFont === "Uthmani") return "uthmani-simple";
+  if (oldFont === "IndoPak") return "indopak";
+  if (oldFont === "Tajweed" || oldFont === "tajweed") return "qcf-v4-tajweed";
+  if (typeof oldFont === "string" && ["uthmani-simple", "indopak", "qcf-v1", "qcf-v2", "qcf-v4-tajweed", "qpc-uthmani-hafs"].includes(oldFont)) {
+    return oldFont as QuranFontVariant;
+  }
+  return "uthmani-simple";
+}
+
+// List of valid setting keys - ignore any deprecated/unknown fields from Firestore
+const VALID_SETTING_KEYS = new Set([
+  "quranFont",
+  "quranFontSize",
+  "translationFontSize",
+  "transliterationFontSize",
+  "translationIds",
+  "transliterationIds",
+  "wordByWordTranslationId",
+  "wordByWordTransliterationId",
+  "theme",
+  "updatedAt",
+]);
+
 const defaultSettings: ReadingSettings = {
-  quranFont: "Uthmani",
+  quranFont: "uthmani-simple",
   quranFontSize: 1,
   translationFontSize: 1,
   transliterationFontSize: 1,
-  overallScale: 1,
   translationIds: [],
   transliterationIds: [],
-  showTranslation: true,
-  showTransliteration: false,
+  wordByWordTranslationId: null,
+  wordByWordTransliterationId: null,
 };
 
 const ReadingSettingsContext = createContext<ReadingSettings>(defaultSettings);
@@ -52,25 +83,35 @@ export function ReadingSettingsProvider({ children }: { children: React.ReactNod
         if (!active) return;
 
         console.log("[ReadingSettingsProvider] Raw Firestore data:", stored);
-        console.log("[ReadingSettingsProvider] Font size check:", {
-          raw: stored?.quranFontSize,
-          type: typeof stored?.quranFontSize,
-          isNumber: typeof stored?.quranFontSize === "number"
-        });
+
+        // Filter out unknown/deprecated fields (e.g., overallScale)
+        const filtered: Record<string, any> = {};
+        if (stored) {
+          for (const key of Object.keys(stored)) {
+            if (VALID_SETTING_KEYS.has(key)) {
+              filtered[key] = stored[key as keyof typeof stored];
+            } else {
+              console.log(`[ReadingSettingsProvider] Ignoring deprecated field: ${key}`);
+            }
+          }
+        }
 
         const normalized: ReadingSettings = {
           ...defaultSettings,
-          ...stored,
-          translationIds: Array.isArray(stored?.translationIds) ? stored.translationIds : [],
-          transliterationIds: Array.isArray(stored?.transliterationIds) ? stored.transliterationIds : [],
-          quranFontSize: typeof stored?.quranFontSize === "number" ? stored.quranFontSize : defaultSettings.quranFontSize,
+          quranFont: migrateLegacyFont(filtered.quranFont),
+          translationIds: Array.isArray(filtered.translationIds) ? filtered.translationIds : [],
+          transliterationIds: Array.isArray(filtered.transliterationIds) ? filtered.transliterationIds : [],
+          quranFontSize: typeof filtered.quranFontSize === "number" ? filtered.quranFontSize : defaultSettings.quranFontSize,
           translationFontSize:
-            typeof stored?.translationFontSize === "number" ? stored.translationFontSize : defaultSettings.translationFontSize,
+            typeof filtered.translationFontSize === "number" ? filtered.translationFontSize : defaultSettings.translationFontSize,
           transliterationFontSize:
-            typeof stored?.transliterationFontSize === "number"
-              ? stored.transliterationFontSize
+            typeof filtered.transliterationFontSize === "number"
+              ? filtered.transliterationFontSize
               : defaultSettings.transliterationFontSize,
-          overallScale: typeof stored?.overallScale === "number" ? stored.overallScale : defaultSettings.overallScale,
+          wordByWordTranslationId:
+            typeof filtered.wordByWordTranslationId === "number" ? filtered.wordByWordTranslationId : null,
+          wordByWordTransliterationId:
+            typeof filtered.wordByWordTransliterationId === "number" ? filtered.wordByWordTransliterationId : null,
         };
 
         console.log("[ReadingSettingsProvider] Normalized settings:", normalized);

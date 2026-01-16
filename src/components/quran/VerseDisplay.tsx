@@ -3,11 +3,28 @@
 import { useReadingSettings } from "./ReadingSettingsProvider";
 import { cn } from "@/lib/utils";
 import VerseActions from "./VerseActions";
+import QuranFontLoader from "./QuranFontLoader";
+import WordHoverTooltip from "./WordHoverTooltip";
+
+type QFWord = {
+  transliteration?: { text?: string; language_name?: string };
+  translation?: { text?: string; language_name?: string };
+  code_v1?: string;
+  code_v2?: string;
+  v1_page?: number;
+  v2_page?: number;
+  qpc_uthmani_hafs?: string;
+  text_uthmani?: string;
+  char_type_name?: string; // "word" or "end"
+};
 
 type Verse = {
   n: number;
   key: string;
   arabic: string;
+  textIndopak?: string;
+  textTajweed?: string;
+  words?: QFWord[];
   translations: { text: string; source?: string; resourceId?: number }[];
   transliterations: { text: string; source?: string; resourceId?: number }[];
 };
@@ -25,14 +42,30 @@ export default function VerseDisplay({
   const quranFontScale = settings.quranFontSize;
   const translationFontScale = settings.translationFontSize;
   const transliterationFontScale = settings.transliterationFontSize;
-  const overallScale = settings.overallScale;
 
-  // Determine which font class to use
-  const quranFontClass = settings.quranFont === "Tajweed"
-    ? "font-quran-tajweed"
-    : settings.quranFont === "IndoPak"
-    ? "font-quran-indopak"
-    : "font-quran"; // Default Uthmani
+  // Determine rendering strategy and text/glyphs to use
+  const fontVariant = settings.quranFont;
+
+  // Text-based rendering (simple)
+  const isTextBased = ["uthmani-simple", "indopak"].includes(fontVariant);
+
+  // Glyph-based rendering (QCF/QPC)
+  const isGlyphBased = ["qcf-v1", "qcf-v2", "qcf-v4-tajweed", "qpc-uthmani-hafs"].includes(fontVariant);
+
+  // Select text based on font variant
+  let arabicText = verse.arabic; // Default to text_uthmani
+  if (fontVariant === "indopak" && verse.textIndopak) {
+    arabicText = verse.textIndopak;
+  }
+
+  // Determine font class for text-based rendering
+  const quranFontClass =
+    fontVariant === "indopak" ? "font-quran-indopak" : "font-quran"; // Default Uthmani
+
+  // Word-by-word settings
+  const showWordTranslation = settings.wordByWordTranslationId !== null;
+  const showWordTransliteration = settings.wordByWordTransliterationId !== null;
+  const wordByWordEnabled = showWordTranslation || showWordTransliteration;
 
   // Debug logging (only for first verse)
   if (verse.n === 1) {
@@ -42,31 +75,31 @@ export default function VerseDisplay({
       quranFontScale,
       translationFontScale,
       transliterationFontScale,
-      overallScale,
-      showTranslation: settings.showTranslation,
-      showTransliteration: settings.showTransliteration,
+      translationIds: settings.translationIds,
+      transliterationIds: settings.transliterationIds,
+      wordByWordTranslationId: settings.wordByWordTranslationId,
+      wordByWordTransliterationId: settings.wordByWordTransliterationId,
     });
   }
 
   return (
-    <article
-      key={verse.key}
-      id={`ayah-${verse.n}`}
-      data-ayah={verse.n}
-      className="
-        relative scroll-mt-28 md:scroll-mt-36
-        rounded-2xl glass-surface glass-readable
-        p-5 md:p-6 pl-14 md:pl-16
-        min-h-44 md:min-h-52
-        flex flex-col justify-center
-      "
-      style={{
-        transform: `scale(${overallScale})`,
-        transformOrigin: "top left",
-        marginBottom: overallScale !== 1 ? `${(overallScale - 1) * 100}%` : undefined,
-      }}
-    >
-      {/* Action column + tiny verse label */}
+    <>
+      {/* Load page-specific fonts for glyph-based rendering */}
+      <QuranFontLoader fontVariant={fontVariant} words={verse.words} />
+
+      <article
+        key={verse.key}
+        id={`ayah-${verse.n}`}
+        data-ayah={verse.n}
+        className="
+          relative scroll-mt-28 md:scroll-mt-36
+          rounded-2xl glass-surface glass-readable
+          p-5 md:p-6 pl-14 md:pl-16
+          flex flex-col justify-center
+          overflow-hidden
+        "
+      >
+        {/* Action column + tiny verse label */}
       <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col items-center">
         {/* Small "chapter:verse" label */}
         <div className="mb-1 rounded px-1.5 py-0.5 text-[10px] leading-none font-medium text-foreground/70 bg-foreground/5">
@@ -87,49 +120,186 @@ export default function VerseDisplay({
         />
       </div>
 
-      {/* Arabic */}
-      <div
-        className={cn(
-          quranFontClass,
-          "text-4xl md:text-5xl leading-[3rem] md:leading-[3.5rem]"
-        )}
-        dir="rtl"
-        style={{
-          fontSize: `${quranFontScale}em`,
-        }}
-      >
-        {verse.arabic}
-      </div>
+      {/* Arabic - Text-based or Glyph-based rendering */}
+      {isTextBased && wordByWordEnabled && verse.words ? (
+        // Text-based with word-by-word hover support
+        <div
+          className={cn(
+            quranFontClass,
+            "leading-relaxed break-words flex flex-wrap gap-x-2"
+          )}
+          dir="rtl"
+          style={{
+            fontSize: `${2.0 * quranFontScale}rem`,
+            lineHeight: 1.6,
+          }}
+        >
+          {verse.words.map((word, idx) => {
+            const isEndMarker = word.char_type_name === "end";
+            const displayText = fontVariant === "indopak"
+              ? (word.text_uthmani || "") // IndoPak text not available per-word, use uthmani
+              : (word.text_uthmani || "");
 
-      {/* Translations (stacked) */}
-      {settings.showTranslation && verse.translations.map((t, i) => (
+            if (!displayText) return null;
+
+            if (!isEndMarker) {
+              return (
+                <WordHoverTooltip
+                  key={`${verse.key}-w${idx}`}
+                  translationText={word.translation?.text}
+                  transliterationText={word.transliteration?.text}
+                  showTranslation={showWordTranslation}
+                  showTransliteration={showWordTransliteration}
+                  fontScale={quranFontScale}
+                >
+                  <span>{displayText}</span>
+                </WordHoverTooltip>
+              );
+            }
+
+            return <span key={`${verse.key}-w${idx}`}>{displayText}</span>;
+          })}
+        </div>
+      ) : isTextBased ? (
+        // Text-based without word-by-word
+        <div
+          className={cn(
+            quranFontClass,
+            "leading-relaxed break-words"
+          )}
+          dir="rtl"
+          style={{
+            fontSize: `${2.0 * quranFontScale}rem`, // Base 2.0rem (32px), scalable up to 4.0rem (64px) at 200%
+            lineHeight: 1.6,
+          }}
+        >
+          {arabicText}
+        </div>
+      ) : isGlyphBased && verse.words ? (
+        <div
+          className="leading-relaxed break-words flex flex-wrap gap-x-1 text-foreground"
+          dir="rtl"
+          style={{
+            fontSize: `${2.0 * quranFontScale}rem`,
+            lineHeight: 1.6,
+          }}
+        >
+          {verse.words.map((word, idx) => {
+            let glyphCode: string | undefined;
+            let fontPage: number | undefined;
+            let fontFamily = "monospace"; // Fallback
+
+            // Select glyph code and page based on font variant
+            if (fontVariant === "qcf-v1") {
+              glyphCode = word.code_v1;
+              fontPage = word.v1_page;
+              fontFamily = fontPage ? `p${fontPage}-v1` : "monospace";
+            } else if (fontVariant === "qcf-v2" || fontVariant === "qcf-v4-tajweed") {
+              glyphCode = word.code_v2;
+              fontPage = word.v2_page;
+              fontFamily = fontPage ? `p${fontPage}-v2` : "monospace";
+            } else if (fontVariant === "qpc-uthmani-hafs") {
+              glyphCode = word.qpc_uthmani_hafs;
+              fontFamily = "qpc-hafs";
+            }
+
+            // Fallback to text if glyph code unavailable
+            const displayText = glyphCode || word.text_uthmani || "";
+
+            // Add class for COLRv1 font-palette support
+            const isCOLRv1 = fontVariant === "qcf-v4-tajweed";
+            const glyphClass = cn(
+              "inline-block",
+              isCOLRv1 && "tajweed-colrv1"
+            );
+
+            // Skip word-by-word tooltip for end of ayah markers
+            const isEndMarker = word.char_type_name === "end";
+
+            // Word content element
+            const wordContent = (
+              <span
+                style={{
+                  fontFamily,
+                  // For COLRv1 fonts, don't set color to let embedded glyph colors show
+                  // For other fonts, inherit theme color
+                  ...(isCOLRv1 ? {} : { color: "inherit" })
+                }}
+                className={glyphClass}
+              >
+                {displayText}
+              </span>
+            );
+
+            // If word-by-word is enabled and this is not an end marker, wrap with tooltip
+            if (wordByWordEnabled && !isEndMarker) {
+              return (
+                <WordHoverTooltip
+                  key={`${verse.key}-w${idx}`}
+                  translationText={word.translation?.text}
+                  transliterationText={word.transliteration?.text}
+                  showTranslation={showWordTranslation}
+                  showTransliteration={showWordTransliteration}
+                  fontScale={quranFontScale}
+                >
+                  {wordContent}
+                </WordHoverTooltip>
+              );
+            }
+
+            // Otherwise render without tooltip
+            return (
+              <span key={`${verse.key}-w${idx}`}>
+                {wordContent}
+              </span>
+            );
+          })}
+        </div>
+      ) : (
+        // Fallback to simple text if no words data
+        <div
+          className={cn(quranFontClass, "leading-relaxed break-words")}
+          dir="rtl"
+          style={{
+            fontSize: `${2.0 * quranFontScale}rem`,
+            lineHeight: 1.6,
+          }}
+        >
+          {arabicText}
+        </div>
+      )}
+
+      {/* Translations (stacked) - shown if translationIds has selections */}
+      {settings.translationIds.length > 0 && verse.translations.map((t, i) => (
         <div
           key={`t-${i}`}
-          className="mt-4 text-base md:text-lg leading-relaxed text-muted-foreground"
+          className="mt-4 leading-relaxed text-muted-foreground break-words"
           dir="ltr"
           style={{
-            fontSize: `${translationFontScale}em`,
+            fontSize: `${1.125 * translationFontScale}rem`, // Base 1.125rem (18px), scalable up to 2.25rem (36px) at 2x
+            lineHeight: 1.75,
           }}
         >
           {t.text}
-          {t.source && <span className="ml-2 opacity-70">— {t.source}</span>}
+          {t.source && <span className="ml-2 opacity-70 text-sm">— {t.source}</span>}
         </div>
       ))}
 
-      {/* Transliterations (stacked, shown after translations) */}
-      {settings.showTransliteration && verse.transliterations.map((tl, i) => (
+      {/* Transliterations (stacked) - shown if transliterationIds has selections */}
+      {settings.transliterationIds.length > 0 && verse.transliterations.map((tl, i) => (
         <div
           key={`tl-${i}`}
-          className="mt-3 text-base md:text-lg leading-relaxed text-muted-foreground/80 italic"
+          className="mt-3 leading-relaxed text-muted-foreground/80 italic break-words"
           dir="ltr"
           style={{
-            fontSize: `${transliterationFontScale}em`,
+            fontSize: `${1 * transliterationFontScale}rem`, // Base 1rem (16px), scalable up to 2rem (32px) at 2x
+            lineHeight: 1.75,
           }}
         >
           {tl.text}
-          {tl.source && <span className="ml-2 opacity-70 text-sm">— {tl.source}</span>}
         </div>
       ))}
-    </article>
+      </article>
+    </>
   );
 }

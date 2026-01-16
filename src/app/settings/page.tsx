@@ -2,24 +2,30 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useThemeTransition } from "@/hooks/use-theme-transition";
-import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getReadingSettings, ReadingSettingsDoc, saveReadingSettings } from "@/lib/cloud";
 
+type QuranFontVariant =
+  | "uthmani-simple"      // text_uthmani (text-based)
+  | "indopak"             // text_indopak (text-based)
+  | "qcf-v1"              // King Fahad Complex V1 (glyph-based)
+  | "qcf-v2"              // King Fahad Complex V2 (glyph-based)
+  | "qcf-v4-tajweed"      // King Fahad Complex V4 Tajweed (glyph-based) - default for "Tajweed"
+  | "qpc-uthmani-hafs";   // QPC Uthmani Hafs (glyph-based)
+
 type Settings = {
   theme: "light" | "dark" | "sepia";
-  quranFont: "Uthmani" | "IndoPak" | "Tajweed";
+  quranFont: QuranFontVariant;
   quranFontSize: number; // 1.0 = base
   translationFontSize: number;
   transliterationFontSize: number;
-  overallScale: number;
   translationIds: number[];
   transliterationIds: number[];
-  showTranslation: boolean;
-  showTransliteration: boolean;
+  // Word-by-word settings (null = disabled)
+  wordByWordTranslationId: number | null;
+  wordByWordTransliterationId: number | null;
 };
 
 type CatalogItem = {
@@ -30,26 +36,45 @@ type CatalogItem = {
   slug?: string;
 };
 
+type WordLanguageItem = {
+  id: number;
+  title: string;
+  nativeName: string;
+  isoCode: string;
+  direction: string;
+};
+
 type SimpleOption = { value: string; label: string };
 
 const defaultSettings: Settings = {
   theme: "dark",
-  quranFont: "Uthmani",
+  quranFont: "uthmani-simple",
   quranFontSize: 1,
   translationFontSize: 1,
   transliterationFontSize: 1,
-  overallScale: 1,
   translationIds: [],
   transliterationIds: [],
-  showTranslation: true,
-  showTransliteration: false,
+  wordByWordTranslationId: null,
+  wordByWordTransliterationId: null,
 };
+
+function migrateLegacyFont(oldFont: any): QuranFontVariant {
+  if (oldFont === "Uthmani") return "uthmani-simple";
+  if (oldFont === "IndoPak") return "indopak";
+  if (oldFont === "Tajweed" || oldFont === "tajweed") return "qcf-v4-tajweed";
+  // If already using new format, return as-is
+  if (typeof oldFont === "string" && ["uthmani-simple", "indopak", "qcf-v1", "qcf-v2", "qcf-v4-tajweed", "qpc-uthmani-hafs"].includes(oldFont)) {
+    return oldFont as QuranFontVariant;
+  }
+  return "uthmani-simple";
+}
 
 function normalizeSettings(data: ReadingSettingsDoc | null): Settings {
   const safe = data ?? {};
   return {
     ...defaultSettings,
     ...safe,
+    quranFont: migrateLegacyFont(safe.quranFont),
     translationIds: Array.isArray(safe.translationIds) ? safe.translationIds : [],
     transliterationIds: Array.isArray(safe.transliterationIds) ? safe.transliterationIds : [],
     quranFontSize: typeof safe.quranFontSize === "number" ? safe.quranFontSize : defaultSettings.quranFontSize,
@@ -59,7 +84,10 @@ function normalizeSettings(data: ReadingSettingsDoc | null): Settings {
       typeof safe.transliterationFontSize === "number"
         ? safe.transliterationFontSize
         : defaultSettings.transliterationFontSize,
-    overallScale: typeof safe.overallScale === "number" ? safe.overallScale : defaultSettings.overallScale,
+    wordByWordTranslationId:
+      typeof safe.wordByWordTranslationId === "number" ? safe.wordByWordTranslationId : null,
+    wordByWordTransliterationId:
+      typeof safe.wordByWordTransliterationId === "number" ? safe.wordByWordTransliterationId : null,
   };
 }
 
@@ -308,6 +336,127 @@ function MultiSelectPopover({
   );
 }
 
+function NullableSingleSelectPopover({
+  id,
+  isOpen,
+  onToggle,
+  onClose,
+  label,
+  value,
+  options,
+  onChange,
+  loading,
+  emptyLabel,
+  placeholder,
+  buttonClassName,
+}: {
+  id: string;
+  isOpen: boolean;
+  onToggle: (id: string) => void;
+  onClose: () => void;
+  label: string;
+  value: number | null;
+  options: WordLanguageItem[];
+  onChange: (next: number | null) => void;
+  loading: boolean;
+  emptyLabel: string;
+  placeholder: string;
+  buttonClassName?: string;
+}) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const current = options.find((opt) => opt.id === value);
+  const displayLabel = current ? `${current.title} (${current.nativeName})` : placeholder;
+
+  const filtered = useMemo(() => {
+    if (!searchTerm) return options;
+    const term = searchTerm.toLowerCase();
+    return options.filter(
+      (opt) =>
+        opt.title.toLowerCase().includes(term) ||
+        opt.nativeName.toLowerCase().includes(term) ||
+        opt.isoCode.toLowerCase().includes(term)
+    );
+  }, [options, searchTerm]);
+
+  return (
+    <div className="relative">
+      <button
+        aria-label={label}
+        className={cn(
+          "group h-10 w-full min-w-0 rounded-xl glass-surface glass-readable px-3 text-sm flex items-center justify-between gap-3",
+          buttonClassName
+        )}
+        onClick={() => onToggle(id)}
+      >
+        <span className={cn("truncate", !current && "text-muted-foreground")}>{displayLabel}</span>
+        <span className="ml-4 flex items-center">
+          <ChevronDown />
+        </span>
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden />
+          <div className="absolute left-0 top-full mt-2 z-50 w-full min-w-[400px] max-w-[calc(100vw-2rem)] rounded-xl glass-surface glass-readable p-4 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2">
+            <input
+              type="text"
+              placeholder="Search languages..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-9 px-3 mb-3 rounded-lg glass-surface glass-readable text-sm border-0 focus:outline-none hover:bg-muted/30 transition-colors"
+            />
+            <div className="max-h-64 overflow-auto pr-1 space-y-1">
+              {loading ? (
+                <div className="text-sm text-muted-foreground py-2">Loading options...</div>
+              ) : filtered.length ? (
+                filtered.map((opt) => {
+                  const isSelected = opt.id === value;
+                  return (
+                    <button
+                      key={opt.id}
+                      className={cn(
+                        "w-full text-left rounded-md px-3 py-2 hover:bg-muted transition-colors",
+                        isSelected ? "bg-green-500/20 text-green-600 dark:text-green-400" : ""
+                      )}
+                      onClick={() => {
+                        onChange(opt.id);
+                        setSearchTerm("");
+                        onClose();
+                      }}
+                    >
+                      <span className="text-sm font-medium">{opt.title}</span>
+                      <span className="text-sm opacity-70 ml-2">({opt.nativeName})</span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="text-sm text-muted-foreground py-2">
+                  {searchTerm ? "No results found" : emptyLabel}
+                </div>
+              )}
+            </div>
+
+            {value !== null && (
+              <div className="mt-4 border-t border-border/50 pt-3">
+                <button
+                  className="text-sm underline opacity-80 hover:opacity-100 hover:text-red-500 transition-colors"
+                  onClick={() => {
+                    onChange(null);
+                    setSearchTerm("");
+                    onClose();
+                  }}
+                >
+                  Clear Selection (Disable)
+                </button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { setTheme } = useThemeTransition();
   const { user } = useAuth();
@@ -319,6 +468,7 @@ export default function SettingsPage() {
 
   const [translations, setTranslations] = useState<CatalogItem[]>([]);
   const [transliterations, setTransliterations] = useState<CatalogItem[]>([]);
+  const [wordLanguages, setWordLanguages] = useState<WordLanguageItem[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
@@ -328,18 +478,21 @@ export default function SettingsPage() {
       setCatalogLoading(true);
       setCatalogError(null);
       try {
-        const [translationsRes, transliterationsRes] = await Promise.all([
+        const [translationsRes, transliterationsRes, wordLangsRes] = await Promise.all([
           fetch("/api/qf/translations"),
           fetch("/api/qf/transliterations"),
+          fetch("/api/qf/word-translations"),
         ]);
         const translationsJson = translationsRes.ok ? await translationsRes.json() : null;
         const transliterationsJson = transliterationsRes.ok ? await transliterationsRes.json() : null;
+        const wordLangsJson = wordLangsRes.ok ? await wordLangsRes.json() : null;
         if (!active) return;
         setTranslations(Array.isArray(translationsJson?.translations) ? translationsJson.translations : []);
         setTransliterations(
           Array.isArray(transliterationsJson?.transliterations) ? transliterationsJson.transliterations : []
         );
-        if (!translationsRes.ok || !transliterationsRes.ok) {
+        setWordLanguages(Array.isArray(wordLangsJson?.languages) ? wordLangsJson.languages : []);
+        if (!translationsRes.ok || !transliterationsRes.ok || !wordLangsRes.ok) {
           setCatalogError("Some options could not be loaded.");
         }
       } catch {
@@ -408,7 +561,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12 space-y-8">
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-64 sm:pt-28 sm:pb-80 space-y-8">
       <header>
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Theme and reading preferences.</p>
@@ -462,9 +615,11 @@ export default function SettingsPage() {
                 label="Quran font"
                 value={settings.quranFont}
                 options={[
-                  { value: "Uthmani", label: "Uthmani" },
-                  { value: "IndoPak", label: "IndoPak" },
-                  { value: "Tajweed", label: "Tajweed" },
+                  { value: "uthmani-simple", label: "QPC Uthmani Hafs" },
+                  { value: "qcf-v1", label: "Uthmani (King Fahad Complex V1)" },
+                  { value: "qcf-v2", label: "Uthmani (King Fahad Complex V2)" },
+                  { value: "indopak", label: "IndoPak" },
+                  { value: "qcf-v4-tajweed", label: "Tajweed (King Fahad Complex V4)" },
                 ]}
                 onChange={(next) => updateSetting("quranFont", next as Settings["quranFont"])}
                 emptyLabel="No fonts available."
@@ -474,8 +629,8 @@ export default function SettingsPage() {
               <Slider
                 value={[scaleToPercent(settings.quranFontSize)]}
                 onValueChange={(value: number[]) => updateSetting("quranFontSize", percentToScale(value[0]))}
-                min={80}
-                max={130}
+                min={50}
+                max={200}
                 step={5}
                 className="w-full md:w-[320px]"
               />
@@ -511,8 +666,8 @@ export default function SettingsPage() {
               <Slider
                 value={[scaleToPercent(settings.translationFontSize)]}
                 onValueChange={(value: number[]) => updateSetting("translationFontSize", percentToScale(value[0]))}
-                min={80}
-                max={130}
+                min={50}
+                max={200}
                 step={5}
                 className="w-full md:w-[320px]"
               />
@@ -548,8 +703,8 @@ export default function SettingsPage() {
               <Slider
                 value={[scaleToPercent(settings.transliterationFontSize)]}
                 onValueChange={(value: number[]) => updateSetting("transliterationFontSize", percentToScale(value[0]))}
-                min={80}
-                max={130}
+                min={50}
+                max={200}
                 step={5}
                 className="w-full md:w-[320px]"
               />
@@ -558,61 +713,55 @@ export default function SettingsPage() {
               </span>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,360px)] md:items-center">
-            <div className="flex items-center gap-4 md:pr-6">
-              <div className="text-sm font-medium w-32">Overall</div>
-              <div className="text-xs text-muted-foreground">Scales the verse card and all text.</div>
-            </div>
-            <div className="flex items-center gap-3 md:justify-end">
-              <Slider
-                value={[scaleToPercent(settings.overallScale)]}
-                onValueChange={(value: number[]) => updateSetting("overallScale", percentToScale(value[0]))}
-                min={80}
-                max={130}
-                step={5}
-                className="w-full md:w-[320px]"
-              />
-              <span className="text-sm opacity-70 w-12 text-right">
-                {scaleToPercent(settings.overallScale)}%
-              </span>
-            </div>
+      {/* WORD BY WORD */}
+      <section className="rounded-xl glass-surface glass-readable p-4 space-y-6 relative z-[5]">
+        <div>
+          <h2 className="font-semibold">Word by Word</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Hover over Arabic words to see translation and transliteration. Size scales with your font settings.
+          </p>
+        </div>
+
+        <div className="space-y-5">
+          <div className="flex items-center gap-4">
+            <div className="text-sm font-medium w-40">Word Translation</div>
+            <NullableSingleSelectPopover
+              id="wbwTranslation"
+              isOpen={openPopover === "wbwTranslation"}
+              onToggle={togglePopover}
+              onClose={closePopover}
+              label="Word-by-word translation language"
+              value={settings.wordByWordTranslationId}
+              options={wordLanguages}
+              onChange={(id) => updateSetting("wordByWordTranslationId", id)}
+              loading={catalogLoading}
+              emptyLabel="No languages available."
+              placeholder="Disabled"
+            />
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="text-sm font-medium w-40">Word Transliteration</div>
+            <NullableSingleSelectPopover
+              id="wbwTransliteration"
+              isOpen={openPopover === "wbwTransliteration"}
+              onToggle={togglePopover}
+              onClose={closePopover}
+              label="Word-by-word transliteration language"
+              value={settings.wordByWordTransliterationId}
+              options={wordLanguages}
+              onChange={(id) => updateSetting("wordByWordTransliterationId", id)}
+              loading={catalogLoading}
+              emptyLabel="No languages available."
+              placeholder="Disabled"
+            />
           </div>
         </div>
       </section>
 
-      {/* READING TOGGLES */}
-      <section className="rounded-xl glass-surface glass-readable p-4 relative z-0">
-        <h2 className="font-semibold">Reading Toggles</h2>
-        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[
-            {
-              key: "showTranslation",
-              label: "Translations",
-              helper: "Show translations while reading.",
-            },
-            {
-              key: "showTransliteration",
-              label: "Transliteration",
-              helper: "Show transliteration while reading.",
-            },
-          ].map(({ key, label, helper }) => (
-            <div key={key} className="rounded-xl glass-surface glass-readable p-4 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-medium">{label}</div>
-                <div className="text-xs text-muted-foreground">{helper}</div>
-              </div>
-              <Switch
-                checked={settings[key as "showTranslation" | "showTransliteration"]}
-                onCheckedChange={(checked) =>
-                  updateSetting(key as "showTranslation" | "showTransliteration", checked)
-                }
-                className="focus-visible:ring-0 focus-visible:ring-offset-0"
-              />
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

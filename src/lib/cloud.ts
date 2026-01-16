@@ -52,17 +52,30 @@ export async function saveProfile(
 
 export type ReadingSettingsDoc = {
   theme?: "light" | "dark" | "sepia";
-  quranFont?: "Uthmani" | "IndoPak" | "Tajweed";
+  quranFont?: string; // Support both old and new font variants
   quranFontSize?: number; // 1.0 = base
   translationFontSize?: number;
   transliterationFontSize?: number;
-  overallScale?: number;
   translationIds?: number[];
   transliterationIds?: number[];
-  showTranslation?: boolean;
-  showTransliteration?: boolean;
+  // Word-by-word settings (nullable = disabled)
+  wordByWordTranslationId?: number | null;
+  wordByWordTransliterationId?: number | null;
   updatedAt?: any;
 };
+
+// Valid keys for reading settings - used to filter out deprecated fields
+const VALID_READING_SETTINGS_KEYS = new Set([
+  "theme",
+  "quranFont",
+  "quranFontSize",
+  "translationFontSize",
+  "transliterationFontSize",
+  "translationIds",
+  "transliterationIds",
+  "wordByWordTranslationId",
+  "wordByWordTransliterationId",
+]);
 
 const readingSettingsRef = (uid: string) => doc(db, "users", uid, "settings", "prefs");
 
@@ -75,9 +88,17 @@ export async function getReadingSettings(uid: string): Promise<ReadingSettingsDo
 }
 
 export async function saveReadingSettings(uid: string, prefs: Partial<ReadingSettingsDoc>) {
+  // Filter out any deprecated/unknown fields before saving
+  const cleanPrefs: Record<string, any> = {};
+  for (const [key, value] of Object.entries(prefs)) {
+    if (VALID_READING_SETTINGS_KEYS.has(key)) {
+      cleanPrefs[key] = value;
+    }
+  }
+
   await setDoc(
     readingSettingsRef(uid),
-    { ...prefs, prefs: deleteField(), updatedAt: serverTimestamp() },
+    { ...cleanPrefs, prefs: deleteField(), updatedAt: serverTimestamp() },
     { merge: true }
   );
 }
