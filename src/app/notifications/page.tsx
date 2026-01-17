@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import AppSubnav from "@/components/AppSubnav";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   NotificationPrefs,
@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Bell, BellRing, Clock, CalendarDays, Check, ChevronDown } from "lucide-react";
+import { Bell, BellRing, Clock, CalendarDays, Check, ChevronDown, ChevronLeft } from "lucide-react";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "@/lib/firebase";
 
@@ -53,6 +53,7 @@ function toDraft(p?: NotificationPrefs | null): Draft {
 }
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const { user, loading } = useAuth();
   const { push } = useToaster();
 
@@ -91,10 +92,35 @@ export default function NotificationsPage() {
 
   if (!user) {
     return (
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
-        <AppSubnav showBack />
-        <h1 className="mt-4 text-2xl font-bold">Notifications</h1>
-        <p className="text-muted-foreground">Sign in to configure notifications.</p>
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
+        <header className="relative">
+          <button
+            onClick={() => router.back()}
+            className={cn(
+              "group absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 h-10 px-4 rounded-full",
+              "glass-surface glass-readable",
+              "text-sm font-medium transition-all duration-200",
+              "hover:brightness-[0.92] dark:hover:brightness-[0.85]"
+            )}
+          >
+            <ChevronLeft className={cn(
+              "h-4 w-4 transition-all duration-200",
+              "group-hover:text-green-600 dark:group-hover:text-green-400",
+              "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+            )} />
+            <span className={cn(
+              "transition-all duration-200",
+              "group-hover:text-green-600 dark:group-hover:text-green-400",
+              "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+            )}>
+              Back
+            </span>
+          </button>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">Notifications</h1>
+            <p className="text-muted-foreground">Sign in to configure notifications.</p>
+          </div>
+        </header>
       </div>
     );
   }
@@ -153,24 +179,83 @@ export default function NotificationsPage() {
     });
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
-      <AppSubnav showBack />
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
+      <header className="relative mb-6">
+        <button
+          onClick={() => router.back()}
+          className={cn(
+            "group absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 h-10 px-4 rounded-full",
+            "glass-surface glass-readable",
+            "text-sm font-medium transition-all duration-200",
+            "hover:brightness-[0.92] dark:hover:brightness-[0.85]"
+          )}
+        >
+          <ChevronLeft className={cn(
+            "h-4 w-4 transition-all duration-200",
+            "group-hover:text-green-600 dark:group-hover:text-green-400",
+            "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+          )} />
+          <span className={cn(
+            "transition-all duration-200",
+            "group-hover:text-green-600 dark:group-hover:text-green-400",
+            "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+          )}>
+            Back
+          </span>
+        </button>
 
-      <div className="mt-4 flex items-center justify-between">
-        <div>
+        {/* Right-aligned controls */}
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          <button
+            onClick={sendServerTest}
+            title="Send a server-side test push"
+            className={cn(
+              "group flex items-center gap-2 h-10 px-4 rounded-full",
+              "glass-surface glass-readable",
+              "text-sm font-medium transition-all duration-200",
+              "hover:brightness-[0.92] dark:hover:brightness-[0.85]"
+            )}
+          >
+            <Bell className={cn(
+              "h-4 w-4 transition-all duration-200",
+              "group-hover:text-green-600 dark:group-hover:text-green-400",
+              "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+            )} />
+            <span className={cn(
+              "transition-all duration-200",
+              "group-hover:text-green-600 dark:group-hover:text-green-400",
+              "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+            )}>
+              Test
+            </span>
+          </button>
+          <button
+            onClick={onSave}
+            disabled={!hasChanges || saving}
+            className={cn(
+              "group flex items-center gap-2 h-10 px-4 rounded-full",
+              "glass-surface glass-readable",
+              "text-sm font-medium transition-all duration-200",
+              hasChanges && !saving
+                ? "hover:brightness-[0.92] dark:hover:brightness-[0.85]"
+                : "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <span className={cn(
+              "transition-all duration-200",
+              hasChanges && !saving && "group-hover:text-green-600 dark:group-hover:text-green-400",
+              hasChanges && !saving && "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+            )}>
+              {saving ? "Saving…" : "Save"}
+            </span>
+          </button>
+        </div>
+
+        <div className="text-center">
           <h1 className="text-2xl font-bold">Notifications</h1>
           <p className="text-muted-foreground">Customize reminders and alerts.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={sendServerTest} title="Send a server-side test push">
-            <Bell className="h-4 w-4 mr-2" />
-            Send test
-          </Button>
-          <Button onClick={onSave} disabled={!hasChanges || saving}>
-            {saving ? "Saving…" : "Save"}
-          </Button>
-        </div>
-      </div>
+      </header>
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Web Push card */}

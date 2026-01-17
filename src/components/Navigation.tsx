@@ -91,8 +91,8 @@ export function Navigation() {
           {/* Row 1: Brand + Right Controls */}
           <div className="flex items-center justify-between min-h-[40px]">
             <Link
-              href={isApp ? "/quran" : "/#home"}
-              className="rounded-full px-3 py-1 font-semibold tracking-tight hover:opacity-90 transition-all duration-300 ease-in-out text-[clamp(0.75rem,3vw,0.875rem)]"
+              href="/quran"
+              className="rounded-full px-3 py-1 font-semibold tracking-tight transition-all duration-300 ease-in-out text-[clamp(0.75rem,3vw,0.875rem)] hover:text-white hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.7)] hover:brightness-110"
               aria-label="Quran & Sunnah Home"
             >
               Quran &amp; Sunnah
@@ -163,8 +163,8 @@ export function Navigation() {
           {/* brand (left) */}
           <div className="flex items-center shrink-0 z-20">
             <Link
-              href={isApp ? "/quran" : "/#home"}
-              className="rounded-full px-3 py-1 font-semibold tracking-tight hover:opacity-90 transition-all duration-300 ease-in-out text-sm xl:text-base whitespace-nowrap"
+              href="/quran"
+              className="rounded-full px-3 py-1 font-semibold tracking-tight transition-all duration-300 ease-in-out text-sm xl:text-base whitespace-nowrap hover:text-white hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.7)] hover:brightness-110"
               aria-label="Quran & Sunnah Home"
             >
               Quran &amp; Sunnah

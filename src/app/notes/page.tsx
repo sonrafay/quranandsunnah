@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { deleteQuranNote, saveQuranNote } from "@/lib/cloud";
 import { getApp } from "firebase/app";
 import { getFirestore, collection, query, orderBy, onSnapshot } from "firebase/firestore";
-import AppSubnav from "@/components/AppSubnav";
+import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronDown } from "lucide-react";
 
 type QuranNote = {
   scope: "quran";
@@ -18,9 +20,11 @@ type QuranNote = {
 };
 
 export default function NotesPage() {
+  const router = useRouter();
   const { user, loading, signInGoogle } = useAuth();
   const [notes, setNotes] = useState<QuranNote[]>([]);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "surah">("newest");
+  const [sortOpen, setSortOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
 
@@ -75,42 +79,137 @@ export default function NotesPage() {
 
   if (!user) {
     return (
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12 space-y-4 text-center">
-        <AppSubnav />
-        <h1 className="text-2xl font-bold">Notes</h1>
-        <p className="text-muted-foreground">Sign in to view and manage your reflections.</p>
-        <button
-          onClick={signInGoogle}
-          className="inline-flex items-center rounded-md bg-foreground px-4 py-2 text-sm text-background"
-        >
-          Continue with Google
-        </button>
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12 space-y-4">
+        <header className="relative">
+          <button
+            onClick={() => router.back()}
+            className={cn(
+              "group absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 h-10 px-4 rounded-full",
+              "glass-surface glass-readable",
+              "text-sm font-medium transition-all duration-200",
+              "hover:brightness-[0.92] dark:hover:brightness-[0.85]"
+            )}
+          >
+            <ChevronLeft className={cn(
+              "h-4 w-4 transition-all duration-200",
+              "group-hover:text-green-600 dark:group-hover:text-green-400",
+              "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+            )} />
+            <span className={cn(
+              "transition-all duration-200",
+              "group-hover:text-green-600 dark:group-hover:text-green-400",
+              "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+            )}>
+              Back
+            </span>
+          </button>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">Notes</h1>
+            <p className="text-muted-foreground">Sign in to view and manage your reflections.</p>
+          </div>
+        </header>
+        <div className="flex items-center justify-center pt-4">
+          <button
+            onClick={signInGoogle}
+            className="inline-flex items-center rounded-md bg-foreground px-4 py-2 text-sm text-background"
+          >
+            Continue with Google
+          </button>
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
-      <AppSubnav />
+  const sortOptions = [
+    { value: "newest", label: "Newest" },
+    { value: "oldest", label: "Oldest" },
+    { value: "surah", label: "Surah" },
+  ] as const;
+  const currentSort = sortOptions.find((o) => o.value === sortBy);
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+  return (
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
+      <header className="relative mb-6">
+        <button
+          onClick={() => router.back()}
+          className={cn(
+            "group absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 h-10 px-4 rounded-full",
+            "glass-surface glass-readable",
+            "text-sm font-medium transition-all duration-200",
+            "hover:brightness-[0.92] dark:hover:brightness-[0.85]"
+          )}
+        >
+          <ChevronLeft className={cn(
+            "h-4 w-4 transition-all duration-200",
+            "group-hover:text-green-600 dark:group-hover:text-green-400",
+            "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+          )} />
+          <span className={cn(
+            "transition-all duration-200",
+            "group-hover:text-green-600 dark:group-hover:text-green-400",
+            "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+          )}>
+            Back
+          </span>
+        </button>
+
+        {/* Sort dropdown - right aligned */}
+        <div className="absolute right-0 top-1/2 -translate-y-1/2">
+          <button
+            onClick={() => setSortOpen(!sortOpen)}
+            className={cn(
+              "group flex items-center gap-2 h-10 px-4 rounded-full",
+              "glass-surface glass-readable",
+              "text-sm font-medium transition-all duration-200",
+              "hover:brightness-[0.92] dark:hover:brightness-[0.85]",
+              sortOpen && "brightness-[0.92] dark:brightness-[0.85]"
+            )}
+          >
+            <span className={cn(
+              "transition-all duration-200",
+              "group-hover:text-green-600 dark:group-hover:text-green-400",
+              "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+            )}>
+              {currentSort?.label || "Sort"}
+            </span>
+            <ChevronDown className={cn(
+              "h-4 w-4 transition-transform duration-200",
+              sortOpen && "rotate-180"
+            )} />
+          </button>
+
+          {sortOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setSortOpen(false)} aria-hidden />
+              <div className="absolute right-0 z-40 mt-2 w-[140px] rounded-xl glass-surface glass-readable p-2 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2">
+                {sortOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      setSortBy(opt.value);
+                      setSortOpen(false);
+                    }}
+                    className={cn(
+                      "w-full text-left px-3 py-2 rounded-lg text-sm",
+                      "transition-all duration-150",
+                      sortBy === opt.value
+                        ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                        : "hover:bg-muted/50 hover:text-green-600 dark:hover:text-green-400"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="text-center">
           <h1 className="text-2xl font-bold">Notes</h1>
           <p className="text-muted-foreground">Your saved reflections by surah & ayah.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm opacity-80">Sort</label>
-          <select
-            className="h-9 rounded-md border bg-background px-2 text-sm"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-          >
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="surah">Surah</option>
-          </select>
-        </div>
-      </div>
+      </header>
 
       <div className="mt-6">
         {!sorted.length ? (
