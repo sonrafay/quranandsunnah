@@ -85,46 +85,92 @@ html {
   }
 
   .sepia {
-    --background: 35 4% 98%;
-    --foreground: 0 0% 0%;
-    --card: 35 4% 96%;
-    --card-foreground: 0 0% 0%;
-    --popover: 35 4% 98%;
-    --popover-foreground: 0 0% 0%;
-    --primary: 0 0% 0%;
-    --primary-foreground: 35 4% 98%;
-    --secondary: 35 4% 95%;
-    --secondary-foreground: 0 0% 0%;
-    --muted: 35 4% 94%;
-    --muted-foreground: 0 0% 0%;
-    --accent: 35 4% 96%;
-    --accent-foreground: 0 0% 0%;
+    /* Stronger sepia background for better contrast */
+    --background: 40 25% 92%;
+    --foreground: 0 0% 10%;
+    /* Pure white cards for maximum contrast */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 0 0% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 10%;
     --destructive: 0 62.8% 45%;
-    --destructive-foreground: 35 4% 98%;
-    --border: 42 16% 84%;
-    --input: 42 16% 84%;
-    --ring: 38 8% 27%;
-    --glass-opacity-base: 0.66;
-    --glass-opacity-hover: 0.72;
-    --glass-opacity-readable: 0.9;
-    --glass-edge-highlight: 0.4;
-    --glass-inner-shadow: 0.1;
-    --glass-drop-shadow: 0.14;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 85%;
+    --input: 0 0% 96%;
+    --ring: 0 0% 20%;
+    /* Glass effect settings for better card visibility */
+    --glass-opacity-base: 0.75;
+    --glass-opacity-hover: 0.82;
+    --glass-opacity-readable: 0.95;
+    --glass-edge-highlight: 0.5;
+    --glass-inner-shadow: 0.05;
+    --glass-drop-shadow: 0.2;
   }
 }
 
-/* Quran font */
+/* Quran fonts from Quran Foundation
+ * Documentation: https://api-docs.quran.foundation/docs/tutorials/fonts/font-rendering/
+ */
+
+/* Uthmanic Hafs - Standard Uthmani script */
 @font-face {
-  font-family: "KFGQPC Uthmanic Script";
+  font-family: "Uthmanic Hafs";
   src:
-    url("/fonts/KFGQPC-Uthmanic-Script-V1.woff2") format("woff2"),
-    url("/fonts/KFGQPC-Uthmanic-Script-V1.woff") format("woff");
+    url("/fonts/UthmanicHafs1Ver18.woff2") format("woff2"),
+    url("/fonts/UthmanicHafs1Ver18.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
+
+/* IndoPak Nastaleeq - South Asian script style */
+@font-face {
+  font-family: "IndoPak Nastaleeq";
+  src:
+    url("/fonts/indopak-nastaleeq.woff2") format("woff2"),
+    url("/fonts/indopak-nastaleeq.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Font utility classes */
 .font-quran {
-  font-family: "KFGQPC Uthmanic Script", var(--font-geist-sans), system-ui, sans-serif;
+  font-family: "Uthmanic Hafs", "Traditional Arabic", "Arabic Typesetting", "Geeza Pro", var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.font-quran-indopak {
+  font-family: "IndoPak Nastaleeq", "Noto Nastaliq Urdu", "Traditional Arabic", "Arabic Typesetting", var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.font-quran-tajweed {
+  /* TODO: Implement Tajweed V4 with colored glyphs (FUTURE FEATURE)
+   *
+   * The colored Tajweed implementation requires:
+   * 1. Page-specific fonts (p1-p604) - one font file per Quran page
+   * 2. Dynamic font loading based on current page/surah
+   * 3. COLRv1 format fonts for Chrome/Safari/Edge
+   * 4. OT-SVG format fonts for Firefox with theme variants (Light/Dark/Sepia)
+   *
+   * Font URL pattern:
+   * https://verses.quran.foundation/fonts/quran/hafs/v4/colrv1/woff2/p{PAGE}.woff2
+   *
+   * Implementation approach:
+   * - Determine which page a surah/ayah is on
+   * - Dynamically inject @font-face for that specific page
+   * - Apply colored Tajweed rules (ikhfa, qalqalah, ghunnah, etc.) via font glyphs
+   *
+   * For now, falls back to standard Uthmanic Hafs font
+   */
+  font-family: "Uthmanic Hafs", "Traditional Arabic", "Arabic Typesetting", var(--font-geist-sans), system-ui, sans-serif;
 }
 
 /* Active ayah highlight (audio-playing) */
@@ -308,5 +354,33 @@ body[style*="margin-right"] {
     box-shadow:
       inset 0 1px 0 hsl(0 0% 100% / var(--glass-edge-highlight)),
       inset 0 -1px 2px hsl(0 0% 0% / var(--glass-inner-shadow));
+  }
+}
+
+/* COLRv1 Font Palette Support for Tajweed Fonts
+ * Controls color scheme of COLRv1 fonts based on theme
+ * Reference: https://css-tricks.com/colrv1-and-css-font-palette-web-typography/
+ */
+@layer base {
+  /* Apply font-palette to COLRv1 Tajweed fonts - use normal (default embedded colors) */
+  .tajweed-colrv1 {
+    font-palette: normal;
+    /* Prevent color inheritance from affecting COLRv1 glyph colors */
+    -webkit-text-fill-color: initial;
+  }
+
+  /* Light mode - default colors from font (no filters) */
+  :root .tajweed-colrv1 {
+    filter: none;
+  }
+
+  /* Dark mode - invert lightness, rotate hue back, boost saturation */
+  .dark .tajweed-colrv1 {
+    filter: invert(1) hue-rotate(180deg) saturate(1.2);
+  }
+
+  /* Sepia mode - boost saturation to compensate for warm background perception */
+  .sepia .tajweed-colrv1 {
+    filter: saturate(1.3) contrast(1.05);
   }
 }

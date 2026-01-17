@@ -50,12 +50,63 @@ export async function saveProfile(
   );
 }
 
-export async function saveSettings(uid: string, prefs: any) {
+export type ReadingSettingsDoc = {
+  theme?: "light" | "dark" | "sepia";
+  quranFont?: string; // Support both old and new font variants
+  quranFontSize?: number; // 1.0 = base
+  translationFontSize?: number;
+  transliterationFontSize?: number;
+  translationIds?: number[];
+  transliterationIds?: number[];
+  // Word-by-word settings (unified language, separate toggles)
+  wordByWordLanguageId?: number | null;
+  showWordByWordTranslation?: boolean;
+  showWordByWordTransliteration?: boolean;
+  updatedAt?: any;
+};
+
+// Valid keys for reading settings - used to filter out deprecated fields
+const VALID_READING_SETTINGS_KEYS = new Set([
+  "theme",
+  "quranFont",
+  "quranFontSize",
+  "translationFontSize",
+  "transliterationFontSize",
+  "translationIds",
+  "transliterationIds",
+  "wordByWordLanguageId",
+  "showWordByWordTranslation",
+  "showWordByWordTransliteration",
+]);
+
+const readingSettingsRef = (uid: string) => doc(db, "users", uid, "settings", "prefs");
+
+export async function getReadingSettings(uid: string): Promise<ReadingSettingsDoc | null> {
+  const snap = await getDoc(readingSettingsRef(uid));
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  console.log("[getReadingSettings] Raw Firestore snap.data():", data);
+  return data as ReadingSettingsDoc;
+}
+
+export async function saveReadingSettings(uid: string, prefs: Partial<ReadingSettingsDoc>) {
+  // Filter out any deprecated/unknown fields before saving
+  const cleanPrefs: Record<string, any> = {};
+  for (const [key, value] of Object.entries(prefs)) {
+    if (VALID_READING_SETTINGS_KEYS.has(key)) {
+      cleanPrefs[key] = value;
+    }
+  }
+
   await setDoc(
-    doc(db, "users", uid, "settings", "prefs"),
-    { prefs, updatedAt: serverTimestamp() },
+    readingSettingsRef(uid),
+    { ...cleanPrefs, prefs: deleteField(), updatedAt: serverTimestamp() },
     { merge: true }
   );
+}
+
+export async function saveSettings(uid: string, prefs: Partial<ReadingSettingsDoc>) {
+  await saveReadingSettings(uid, prefs);
 }
 
 export async function markQuranProgress(uid: string, surah: number, ayah?: number) {
