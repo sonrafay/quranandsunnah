@@ -8,7 +8,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { getRecentReadings, removeRecentReading } from "@/lib/cloud";
 import { Button } from "@/components/ui/button";
 import { surahs } from "@/lib/quran-meta";
-import AppSubnav from "@/components/AppSubnav";
+import { cn } from "@/lib/utils";
+import { ChevronLeft } from "lucide-react";
 
 type Row = {
   id: string;   // surah as string
@@ -52,11 +53,36 @@ export default function RecentReadingsPage() {
 
   if (!user) {
     return (
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12 space-y-4 text-center">
-        <AppSubnav />
-        <h1 className="text-2xl font-bold">Recent readings</h1>
-        <p className="text-muted-foreground">Sign in to continue where you left off.</p>
-        <div className="flex items-center justify-center gap-3">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12 space-y-4">
+        <header className="relative">
+          <button
+            onClick={() => router.back()}
+            className={cn(
+              "group absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 h-10 px-4 rounded-full",
+              "glass-surface glass-readable",
+              "text-sm font-medium transition-all duration-200",
+              "hover:brightness-[0.92] dark:hover:brightness-[0.85]"
+            )}
+          >
+            <ChevronLeft className={cn(
+              "h-4 w-4 transition-all duration-200",
+              "group-hover:text-green-600 dark:group-hover:text-green-400",
+              "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+            )} />
+            <span className={cn(
+              "transition-all duration-200",
+              "group-hover:text-green-600 dark:group-hover:text-green-400",
+              "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+            )}>
+              Back
+            </span>
+          </button>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">Recent readings</h1>
+            <p className="text-muted-foreground">Sign in to continue where you left off.</p>
+          </div>
+        </header>
+        <div className="flex items-center justify-center gap-3 pt-4">
           <Button onClick={signInGoogle}>Continue with Google</Button>
           <Button variant="outline" onClick={() => router.push("/signin?next=/recent")}>
             Use email instead
@@ -116,15 +142,36 @@ export default function RecentReadingsPage() {
   }, [rows, fetching, user]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
-      <AppSubnav />
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
+      <header className="relative mb-6">
+        <button
+          onClick={() => router.back()}
+          className={cn(
+            "group absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 h-10 px-4 rounded-full",
+            "glass-surface glass-readable",
+            "text-sm font-medium transition-all duration-200",
+            "hover:brightness-[0.92] dark:hover:brightness-[0.85]"
+          )}
+        >
+          <ChevronLeft className={cn(
+            "h-4 w-4 transition-all duration-200",
+            "group-hover:text-green-600 dark:group-hover:text-green-400",
+            "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+          )} />
+          <span className={cn(
+            "transition-all duration-200",
+            "group-hover:text-green-600 dark:group-hover:text-green-400",
+            "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+          )}>
+            Back
+          </span>
+        </button>
 
-      <div className="flex items-center justify-between">
-        <div>
+        <div className="text-center">
           <h1 className="text-2xl font-bold">Recent readings</h1>
           <p className="text-muted-foreground">Pick up right where you left off.</p>
         </div>
-      </div>
+      </header>
 
       <div className="mt-6">
         {content}

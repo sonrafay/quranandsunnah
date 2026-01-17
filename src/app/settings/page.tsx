@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useThemeTransition } from "@/hooks/use-theme-transition";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getReadingSettings, ReadingSettingsDoc, saveReadingSettings } from "@/lib/cloud";
+import { ChevronLeft } from "lucide-react";
 
 type QuranFontVariant =
   | "uthmani-simple"      // text_uthmani (text-based)
@@ -189,7 +191,7 @@ function SingleSelectPopover({
       <button
         aria-label={label}
         className={cn(
-          "group h-10 w-full min-w-0 rounded-xl glass-surface glass-readable px-3 text-sm flex items-center justify-between gap-3",
+          "group h-10 w-full min-w-0 rounded-full glass-surface glass-readable px-4 text-sm flex items-center justify-between gap-3",
           buttonClassName
         )}
         onClick={() => onToggle(id)}
@@ -296,7 +298,7 @@ function MultiSelectPopover({
       <button
         aria-label={label}
         className={cn(
-          "group h-10 w-full min-w-0 rounded-xl glass-surface glass-readable px-3 text-sm flex items-center justify-between gap-3",
+          "group h-10 w-full min-w-0 rounded-full glass-surface glass-readable px-4 text-sm flex items-center justify-between gap-3",
           buttonClassName
         )}
         onClick={() => onToggle(id)}
@@ -420,7 +422,7 @@ function NullableSingleSelectPopover({
       <button
         aria-label={label}
         className={cn(
-          "group h-10 w-full min-w-0 rounded-xl glass-surface glass-readable px-3 text-sm flex items-center justify-between gap-3",
+          "group h-10 w-full min-w-0 rounded-full glass-surface glass-readable px-4 text-sm flex items-center justify-between gap-3",
           buttonClassName
         )}
         onClick={() => onToggle(id)}
@@ -495,6 +497,7 @@ function NullableSingleSelectPopover({
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { setTheme } = useThemeTransition();
   const { user } = useAuth();
 
@@ -599,9 +602,36 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-64 sm:pt-28 sm:pb-80 space-y-8">
-      <header>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Theme and reading preferences.</p>
+      <header className="relative">
+        {/* Back button - left aligned */}
+        <button
+          onClick={() => router.back()}
+          className={cn(
+            "group absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 h-10 px-4 rounded-full",
+            "glass-surface glass-readable",
+            "text-sm font-medium transition-all duration-200",
+            "hover:brightness-[0.92] dark:hover:brightness-[0.85]"
+          )}
+        >
+          <ChevronLeft className={cn(
+            "h-4 w-4 transition-all duration-200",
+            "group-hover:text-green-600 dark:group-hover:text-green-400",
+            "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+          )} />
+          <span className={cn(
+            "transition-all duration-200",
+            "group-hover:text-green-600 dark:group-hover:text-green-400",
+            "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+          )}>
+            Back
+          </span>
+        </button>
+
+        {/* Centered title and description */}
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Settings</h1>
+          <p className="text-muted-foreground">Theme and reading preferences.</p>
+        </div>
       </header>
 
       {/* THEME */}
