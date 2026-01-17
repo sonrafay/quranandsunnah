@@ -23,9 +23,10 @@ type Settings = {
   transliterationFontSize: number;
   translationIds: number[];
   transliterationIds: number[];
-  // Word-by-word settings (null = disabled)
-  wordByWordTranslationId: number | null;
-  wordByWordTransliterationId: number | null;
+  // Word-by-word settings (unified language, separate toggles)
+  wordByWordLanguageId: number | null;
+  showWordByWordTranslation: boolean;
+  showWordByWordTransliteration: boolean;
 };
 
 type CatalogItem = {
@@ -44,7 +45,27 @@ type WordLanguageItem = {
   direction: string;
 };
 
-type SimpleOption = { value: string; label: string };
+type SimpleOption = { value: string; label: string; shortLabel?: string };
+
+// Curated list of supported word-by-word translation languages (matching Quran.com)
+// These are the ISO codes that the API actually supports for word translations
+const SUPPORTED_WORD_LANGUAGES = new Set([
+  "ar",  // Arabic
+  "en",  // English
+  "id",  // Indonesian
+  "bn",  // Bangla
+  "de",  // Deutsch
+  "sq",  // Shqip (Albanian)
+  "ur",  // اردو (Urdu)
+  "ru",  // русский (Russian)
+  "tr",  // Türkçe (Turkish)
+  "fa",  // فارسی (Persian)
+  "hi",  // हिन्दी (Hindi)
+  "ta",  // தமிழ் (Tamil)
+  "zh",  // 简体中文 (Chinese)
+  "fr",  // Français (French)
+  "ml",  // മലയാളം (Malayalam)
+]);
 
 const defaultSettings: Settings = {
   theme: "dark",
@@ -54,8 +75,9 @@ const defaultSettings: Settings = {
   transliterationFontSize: 1,
   translationIds: [],
   transliterationIds: [],
-  wordByWordTranslationId: null,
-  wordByWordTransliterationId: null,
+  wordByWordLanguageId: null,
+  showWordByWordTranslation: false,
+  showWordByWordTransliteration: false,
 };
 
 function migrateLegacyFont(oldFont: any): QuranFontVariant {
@@ -71,6 +93,21 @@ function migrateLegacyFont(oldFont: any): QuranFontVariant {
 
 function normalizeSettings(data: ReadingSettingsDoc | null): Settings {
   const safe = data ?? {};
+  // Migration: if old wordByWordTranslationId exists, migrate to new schema
+  const migratedLanguageId = typeof safe.wordByWordLanguageId === "number"
+    ? safe.wordByWordLanguageId
+    : typeof (safe as any).wordByWordTranslationId === "number"
+      ? (safe as any).wordByWordTranslationId
+      : null;
+  // Migration: if old wordByWordTranslationId was set, enable translation toggle
+  const migratedShowTranslation = typeof safe.showWordByWordTranslation === "boolean"
+    ? safe.showWordByWordTranslation
+    : typeof (safe as any).wordByWordTranslationId === "number";
+  // Migration: if old wordByWordTransliterationId was set, enable transliteration toggle
+  const migratedShowTransliteration = typeof safe.showWordByWordTransliteration === "boolean"
+    ? safe.showWordByWordTransliteration
+    : typeof (safe as any).wordByWordTransliterationId === "number";
+
   return {
     ...defaultSettings,
     ...safe,
@@ -84,10 +121,9 @@ function normalizeSettings(data: ReadingSettingsDoc | null): Settings {
       typeof safe.transliterationFontSize === "number"
         ? safe.transliterationFontSize
         : defaultSettings.transliterationFontSize,
-    wordByWordTranslationId:
-      typeof safe.wordByWordTranslationId === "number" ? safe.wordByWordTranslationId : null,
-    wordByWordTransliterationId:
-      typeof safe.wordByWordTransliterationId === "number" ? safe.wordByWordTransliterationId : null,
+    wordByWordLanguageId: migratedLanguageId,
+    showWordByWordTranslation: migratedShowTranslation,
+    showWordByWordTransliteration: migratedShowTransliteration,
   };
 }
 
@@ -138,7 +174,8 @@ function SingleSelectPopover({
   buttonClassName?: string;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
-  const current = options.find((opt) => opt.value === value)?.label ?? value;
+  const currentOption = options.find((opt) => opt.value === value);
+  const current = currentOption?.shortLabel ?? currentOption?.label ?? value;
 
   const filteredOptions = useMemo(() => {
     if (!searchTerm) return options;
@@ -615,11 +652,11 @@ export default function SettingsPage() {
                 label="Quran font"
                 value={settings.quranFont}
                 options={[
-                  { value: "uthmani-simple", label: "QPC Uthmani Hafs" },
-                  { value: "qcf-v1", label: "Uthmani (King Fahad Complex V1)" },
-                  { value: "qcf-v2", label: "Uthmani (King Fahad Complex V2)" },
+                  { value: "uthmani-simple", label: "QPC Uthmani Hafs", shortLabel: "Uthmani 1" },
+                  { value: "qcf-v1", label: "Uthmani (King Fahad Complex V1)", shortLabel: "Uthmani 2" },
+                  { value: "qcf-v2", label: "Uthmani (King Fahad Complex V2)", shortLabel: "Uthmani 3" },
                   { value: "indopak", label: "IndoPak" },
-                  { value: "qcf-v4-tajweed", label: "Tajweed (King Fahad Complex V4)" },
+                  { value: "qcf-v4-tajweed", label: "Tajweed (King Fahad Complex V4)", shortLabel: "Tajweed" },
                 ]}
                 onChange={(next) => updateSetting("quranFont", next as Settings["quranFont"])}
                 emptyLabel="No fonts available."
@@ -726,39 +763,57 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-5">
+          {/* Language selector - filtered to supported languages only */}
           <div className="flex items-center gap-4">
-            <div className="text-sm font-medium w-40">Word Translation</div>
+            <div className="text-sm font-medium w-40">Language</div>
             <NullableSingleSelectPopover
-              id="wbwTranslation"
-              isOpen={openPopover === "wbwTranslation"}
+              id="wbwLanguage"
+              isOpen={openPopover === "wbwLanguage"}
               onToggle={togglePopover}
               onClose={closePopover}
-              label="Word-by-word translation language"
-              value={settings.wordByWordTranslationId}
-              options={wordLanguages}
-              onChange={(id) => updateSetting("wordByWordTranslationId", id)}
+              label="Word-by-word language"
+              value={settings.wordByWordLanguageId}
+              options={wordLanguages.filter(lang => SUPPORTED_WORD_LANGUAGES.has(lang.isoCode))}
+              onChange={(id) => updateSetting("wordByWordLanguageId", id)}
               loading={catalogLoading}
               emptyLabel="No languages available."
-              placeholder="Disabled"
+              placeholder="Select a language"
             />
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-sm font-medium w-40">Word Transliteration</div>
-            <NullableSingleSelectPopover
-              id="wbwTransliteration"
-              isOpen={openPopover === "wbwTransliteration"}
-              onToggle={togglePopover}
-              onClose={closePopover}
-              label="Word-by-word transliteration language"
-              value={settings.wordByWordTransliterationId}
-              options={wordLanguages}
-              onChange={(id) => updateSetting("wordByWordTransliterationId", id)}
-              loading={catalogLoading}
-              emptyLabel="No languages available."
-              placeholder="Disabled"
-            />
+          {/* Pill-style toggle buttons */}
+          <div className="flex justify-center gap-3">
+            <button
+              className={cn(
+                "h-11 px-6 rounded-full glass-surface glass-readable text-sm font-medium transition-colors",
+                settings.showWordByWordTranslation
+                  ? "bg-green-500/25 text-green-500 dark:text-green-400 shadow-[0_0_12px_rgba(34,197,94,0.3)]"
+                  : "hover:text-green-500/80 dark:hover:text-green-400/80"
+              )}
+              onClick={() => updateSetting("showWordByWordTranslation", !settings.showWordByWordTranslation)}
+            >
+              Translation
+            </button>
+
+            <button
+              className={cn(
+                "h-11 px-6 rounded-full glass-surface glass-readable text-sm font-medium transition-colors",
+                settings.showWordByWordTransliteration
+                  ? "bg-green-500/25 text-green-500 dark:text-green-400 shadow-[0_0_12px_rgba(34,197,94,0.3)]"
+                  : "hover:text-green-500/80 dark:hover:text-green-400/80"
+              )}
+              onClick={() => updateSetting("showWordByWordTransliteration", !settings.showWordByWordTransliteration)}
+            >
+              Transliteration
+            </button>
           </div>
+
+          {/* Info text about current state */}
+          {!settings.wordByWordLanguageId && (settings.showWordByWordTranslation || settings.showWordByWordTransliteration) && (
+            <p className="text-xs text-amber-500">
+              Select a language above to enable word-by-word features.
+            </p>
+          )}
         </div>
       </section>
 

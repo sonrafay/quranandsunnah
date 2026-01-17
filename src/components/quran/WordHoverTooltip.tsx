@@ -39,7 +39,8 @@ export default function WordHoverTooltip({
     if (wordRef.current) {
       const rect = wordRef.current.getBoundingClientRect();
       const spaceAbove = rect.top;
-      const tooltipEstimatedHeight = 80; // Rough estimate
+      // Estimate tooltip height: translation + transliteration + padding
+      const tooltipEstimatedHeight = 100;
 
       if (spaceAbove < tooltipEstimatedHeight) {
         setTooltipPosition("below");
@@ -59,8 +60,8 @@ export default function WordHoverTooltip({
   }
 
   // Calculate tooltip font sizes based on scale
-  const translationFontSize = `${0.875 * fontScale}rem`; // Base 14px
-  const transliterationFontSize = `${0.75 * fontScale}rem`; // Base 12px
+  const translationFontSize = `${1.0 * fontScale}rem`; // Base 16px, scales with settings
+  const transliterationFontSize = `${0.875 * fontScale}rem`; // Base 14px, scales with settings
 
   return (
     <span
@@ -79,13 +80,14 @@ export default function WordHoverTooltip({
         <div
           ref={tooltipRef}
           className={cn(
-            "absolute z-50 px-3 py-2 rounded-lg glass-surface glass-readable shadow-lg",
+            "absolute z-50 px-4 py-3 rounded-xl shadow-xl",
+            "bg-background dark:bg-zinc-900 border border-border/50",
             "animate-in fade-in-0 zoom-in-95 duration-150",
-            "min-w-max max-w-[280px]",
+            "min-w-max max-w-[320px]",
             // Position based on available space
             tooltipPosition === "above"
-              ? "bottom-full mb-2 left-1/2 -translate-x-1/2"
-              : "top-full mt-2 left-1/2 -translate-x-1/2"
+              ? "bottom-full mb-3 left-1/2 -translate-x-1/2"
+              : "top-full mt-3 left-1/2 -translate-x-1/2"
           )}
           dir="ltr"
         >
@@ -93,11 +95,11 @@ export default function WordHoverTooltip({
           <div
             className={cn(
               "absolute left-1/2 -translate-x-1/2 w-0 h-0",
-              "border-l-[6px] border-l-transparent",
-              "border-r-[6px] border-r-transparent",
+              "border-l-[8px] border-l-transparent",
+              "border-r-[8px] border-r-transparent",
               tooltipPosition === "above"
-                ? "top-full border-t-[6px] border-t-[var(--glass-bg,rgba(255,255,255,0.1))]"
-                : "bottom-full border-b-[6px] border-b-[var(--glass-bg,rgba(255,255,255,0.1))]"
+                ? "top-full border-t-[8px] border-t-background dark:border-t-zinc-900"
+                : "bottom-full border-b-[8px] border-b-background dark:border-b-zinc-900"
             )}
           />
 

@@ -58,9 +58,10 @@ export type ReadingSettingsDoc = {
   transliterationFontSize?: number;
   translationIds?: number[];
   transliterationIds?: number[];
-  // Word-by-word settings (nullable = disabled)
-  wordByWordTranslationId?: number | null;
-  wordByWordTransliterationId?: number | null;
+  // Word-by-word settings (unified language, separate toggles)
+  wordByWordLanguageId?: number | null;
+  showWordByWordTranslation?: boolean;
+  showWordByWordTransliteration?: boolean;
   updatedAt?: any;
 };
 
@@ -73,8 +74,9 @@ const VALID_READING_SETTINGS_KEYS = new Set([
   "transliterationFontSize",
   "translationIds",
   "transliterationIds",
-  "wordByWordTranslationId",
-  "wordByWordTransliterationId",
+  "wordByWordLanguageId",
+  "showWordByWordTranslation",
+  "showWordByWordTransliteration",
 ]);
 
 const readingSettingsRef = (uid: string) => doc(db, "users", uid, "settings", "prefs");

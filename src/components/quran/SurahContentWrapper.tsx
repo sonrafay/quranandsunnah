@@ -24,36 +24,69 @@ function SurahContentInner({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Sync URL with settings to fetch correct translations/transliterations
+  // Sync URL with settings to fetch correct translations/transliterations/word-by-word
   useEffect(() => {
-    const hasTranslationParam = searchParams.get("t");
-    const hasTransliterationParam = searchParams.get("tl");
+    const currentTParam = searchParams.get("t");
+    const currentTLParam = searchParams.get("tl");
+    const currentWTParam = searchParams.get("wt");
+    const currentRParam = searchParams.get("r");
 
-    // Only update URL if we have settings loaded and they differ from current URL
-    if (settings.translationIds.length > 0) {
-      const currentT = hasTranslationParam?.split(",").map(Number).sort().join(",");
-      const settingsT = settings.translationIds.sort().join(",");
-      const currentTL = hasTransliterationParam?.split(",").map(Number).sort().join(",") || "";
-      const settingsTL = settings.transliterationIds.sort().join(",");
+    // Build what current URL has
+    const currentT = currentTParam?.split(",").map(Number).sort().join(",") || "";
+    const currentTL = currentTLParam?.split(",").map(Number).sort().join(",") || "";
+    const currentWT = currentWTParam || "";
 
-      if (currentT !== settingsT || currentTL !== settingsTL) {
-        const params = new URLSearchParams();
+    // Build what settings say we need
+    const settingsT = settings.translationIds.sort().join(",");
+    const settingsTL = settings.transliterationIds.sort().join(",");
+    // Only sync word-by-word language when translation is enabled (API uses language for word translations)
+    const settingsWT = (settings.wordByWordLanguageId !== null && settings.showWordByWordTranslation)
+      ? settings.wordByWordLanguageId.toString()
+      : "";
+
+    // Check if URL needs updating
+    const needsUpdate =
+      (settings.translationIds.length > 0 && currentT !== settingsT) ||
+      currentTL !== settingsTL ||
+      currentWT !== settingsWT;
+
+    if (needsUpdate && (settings.translationIds.length > 0 || settingsWT)) {
+      const params = new URLSearchParams();
+
+      // Preserve translations
+      if (settings.translationIds.length > 0) {
         params.set("t", settings.translationIds.join(","));
-
-        if (settings.transliterationIds.length > 0) {
-          params.set("tl", settings.transliterationIds.join(","));
-        }
-
-        console.log("[SurahContentWrapper] Syncing URL with settings:", {
-          translationIds: settings.translationIds,
-          transliterationIds: settings.transliterationIds
-        });
-
-        // Update URL to trigger server refetch with correct IDs
-        router.replace(`?${params.toString()}`);
+      } else if (currentTParam) {
+        params.set("t", currentTParam);
       }
+
+      // Set transliterations if any
+      if (settings.transliterationIds.length > 0) {
+        params.set("tl", settings.transliterationIds.join(","));
+      }
+
+      // Set word-by-word language if translation is enabled
+      if (settings.wordByWordLanguageId !== null && settings.showWordByWordTranslation) {
+        params.set("wt", settings.wordByWordLanguageId.toString());
+      }
+
+      // Preserve reciter
+      if (currentRParam) {
+        params.set("r", currentRParam);
+      }
+
+      console.log("[SurahContentWrapper] Syncing URL with settings:", {
+        translationIds: settings.translationIds,
+        transliterationIds: settings.transliterationIds,
+        wordByWordLanguageId: settings.wordByWordLanguageId,
+        showWordByWordTranslation: settings.showWordByWordTranslation,
+        showWordByWordTransliteration: settings.showWordByWordTransliteration,
+      });
+
+      // Update URL to trigger server refetch with correct IDs
+      router.replace(`?${params.toString()}`);
     }
-  }, [settings.translationIds, settings.transliterationIds, searchParams, router]);
+  }, [settings.translationIds, settings.transliterationIds, settings.wordByWordLanguageId, settings.showWordByWordTranslation, searchParams, router]);
 
   return (
     <div className="space-y-8">

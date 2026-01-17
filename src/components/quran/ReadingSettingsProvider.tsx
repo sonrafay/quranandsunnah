@@ -19,9 +19,10 @@ type ReadingSettings = {
   transliterationFontSize: number;
   translationIds: number[];
   transliterationIds: number[];
-  // Word-by-word settings (null = disabled)
-  wordByWordTranslationId: number | null;
-  wordByWordTransliterationId: number | null;
+  // Word-by-word settings (unified language, separate toggles)
+  wordByWordLanguageId: number | null;
+  showWordByWordTranslation: boolean;
+  showWordByWordTransliteration: boolean;
 };
 
 function migrateLegacyFont(oldFont: any): QuranFontVariant {
@@ -42,6 +43,10 @@ const VALID_SETTING_KEYS = new Set([
   "transliterationFontSize",
   "translationIds",
   "transliterationIds",
+  "wordByWordLanguageId",
+  "showWordByWordTranslation",
+  "showWordByWordTransliteration",
+  // Legacy fields (for migration)
   "wordByWordTranslationId",
   "wordByWordTransliterationId",
   "theme",
@@ -55,8 +60,9 @@ const defaultSettings: ReadingSettings = {
   transliterationFontSize: 1,
   translationIds: [],
   transliterationIds: [],
-  wordByWordTranslationId: null,
-  wordByWordTransliterationId: null,
+  wordByWordLanguageId: null,
+  showWordByWordTranslation: false,
+  showWordByWordTransliteration: false,
 };
 
 const ReadingSettingsContext = createContext<ReadingSettings>(defaultSettings);
@@ -96,6 +102,21 @@ export function ReadingSettingsProvider({ children }: { children: React.ReactNod
           }
         }
 
+        // Migration: if old wordByWordTranslationId exists, migrate to new schema
+        const migratedLanguageId = typeof filtered.wordByWordLanguageId === "number"
+          ? filtered.wordByWordLanguageId
+          : typeof filtered.wordByWordTranslationId === "number"
+            ? filtered.wordByWordTranslationId
+            : null;
+        // Migration: if old wordByWordTranslationId was set, enable translation toggle
+        const migratedShowTranslation = typeof filtered.showWordByWordTranslation === "boolean"
+          ? filtered.showWordByWordTranslation
+          : typeof filtered.wordByWordTranslationId === "number";
+        // Migration: if old wordByWordTransliterationId was set, enable transliteration toggle
+        const migratedShowTransliteration = typeof filtered.showWordByWordTransliteration === "boolean"
+          ? filtered.showWordByWordTransliteration
+          : typeof filtered.wordByWordTransliterationId === "number";
+
         const normalized: ReadingSettings = {
           ...defaultSettings,
           quranFont: migrateLegacyFont(filtered.quranFont),
@@ -108,10 +129,9 @@ export function ReadingSettingsProvider({ children }: { children: React.ReactNod
             typeof filtered.transliterationFontSize === "number"
               ? filtered.transliterationFontSize
               : defaultSettings.transliterationFontSize,
-          wordByWordTranslationId:
-            typeof filtered.wordByWordTranslationId === "number" ? filtered.wordByWordTranslationId : null,
-          wordByWordTransliterationId:
-            typeof filtered.wordByWordTransliterationId === "number" ? filtered.wordByWordTransliterationId : null,
+          wordByWordLanguageId: migratedLanguageId,
+          showWordByWordTranslation: migratedShowTranslation,
+          showWordByWordTransliteration: migratedShowTransliteration,
         };
 
         console.log("[ReadingSettingsProvider] Normalized settings:", normalized);

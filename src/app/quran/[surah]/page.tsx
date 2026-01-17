@@ -2,8 +2,6 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { qfGet } from "@/lib/server/qf";
-import VerseActions from "@/components/quran/VerseActions";
-import TranslationMultiPicker, { TranslationItem } from "@/components/quran/TranslationMultiPicker";
 import ReciterPicker, { Reciter } from "@/components/quran/ReciterPicker";
 import ScrollProgressBar from "@/components/ScrollProgressBar";
 import SurahFooterNav from "@/components/quran/SurahFooterNav";
@@ -12,6 +10,7 @@ import SurahTitle from "@/components/quran/SurahTitle";
 import BookmarksLayer from "@/components/quran/BookmarksLayer";
 import QuranRecentTracker from "@/components/quran/QuranRecentTracker";
 import SurahSideNav from "@/components/quran/SurahSideNav";
+import SurahPicker from "@/components/quran/SurahPicker";
 
 
 // ✅ Mount the compact left notes box (client-only)
@@ -41,13 +40,6 @@ type QFVerse = {
   audio?: { url?: string };
 };
 
-type QFTranslation = {
-  id: number;
-  name: string;
-  language_name: string;
-  translator_name?: string;
-  slug?: string;
-};
 
 type QFChapter = {
   id: number;
@@ -78,18 +70,6 @@ async function getChapterMeta(id: string) {
   };
 }
 
-async function getTranslations(): Promise<TranslationItem[]> {
-  const data = await qfGet<{ translations: QFTranslation[] }>(
-    "/resources/translations",
-    { revalidate: 60 * 60 * 24 }
-  );
-  return (data.translations ?? []).map((t) => ({
-    id: t.id,
-    title: t.name || t.slug || String(t.id),
-    lang: t.language_name || "Unknown",
-    translator: t.translator_name ?? null,
-  }));
-}
 
 async function getReciters(): Promise<Reciter[]> {
   const data = await qfGet<{ recitations: { id: number; reciter_name: string }[] }>(
@@ -155,26 +135,35 @@ function parseIdList(param?: string): number[] | undefined {
   return ids.length ? ids : undefined;
 }
 
-function pickDefaultTranslation(list: TranslationItem[]): number[] {
-  const haleem = list.find(
-    (t) =>
-      t.lang.toLowerCase() === "english" &&
-      (/haleem/i.test(t.title) || /haleem/i.test(t.translator || ""))
-  );
-  if (haleem) return [haleem.id];
-  const eng = list.find((t) => t.lang.toLowerCase() === "english");
-  if (eng) return [eng.id];
-  return list[0] ? [list[0].id] : [];
-}
-
 function pickDefaultReciter(list: Reciter[]): number {
   const mishari = list.find((r) => /mishari|alafasy|afasy/i.test(r.name));
   return mishari?.id ?? list[0]?.id ?? 1;
 }
 
+// Map language ID to ISO code for word-by-word translation
+// The Quran.com API expects ISO code (e.g., "ur") not numeric ID (e.g., 38)
+async function getLanguageIsoCode(langId: number): Promise<string | null> {
+  try {
+    const data = await qfGet<{ languages: Array<{ id: number; iso_code: string }> }>(
+      "/resources/languages",
+      { revalidate: 60 * 60 * 24 }
+    );
+    const lang = data.languages?.find((l) => l.id === langId);
+    return lang?.iso_code || null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchVerses(
   surah: string,
-  opts: { translationIds?: number[]; transliterationIds?: number[]; reciterId?: number }
+  opts: {
+    translationIds?: number[];
+    transliterationIds?: number[];
+    reciterId?: number;
+    wordTranslationLangId?: number;  // Language ID for word-by-word translation
+    wordTranslationIsoCode?: string; // ISO code for word-by-word translation (e.g., "ur")
+  }
 ): Promise<{
   chapter: number;
   verses: { n: number; key: string; arabic: string; textIndopak?: string; textTajweed?: string; words?: QFWord[]; translations: { text: string; source?: string; resourceId?: number }[]; transliterations: { text: string; source?: string; resourceId?: number }[]; audioUrl?: string }[];
@@ -194,9 +183,11 @@ async function fetchVerses(
     query.translations = opts.translationIds.join(",");
   }
 
-  // Add language parameter for transliteration if needed
-  if (opts.transliterationIds?.length) {
-    query.language = opts.transliterationIds[0].toString();
+  // Add language parameter for word-by-word translation
+  // The 'language' parameter controls the language of word.translation.text
+  // IMPORTANT: API expects ISO code (e.g., "ur"), not numeric ID (e.g., 38)
+  if (opts.wordTranslationIsoCode) {
+    query.language = opts.wordTranslationIsoCode;
   }
 
   if (opts.reciterId) query.audio = String(opts.reciterId);
@@ -280,22 +271,35 @@ export default async function SurahPage({
   searchParams,
 }: {
   params: { surah: string };
-  searchParams: { t?: string; tl?: string; r?: string };
+  searchParams: { t?: string; tl?: string; r?: string; wt?: string };
 }) {
   const surah = params.surah;
 
-  const [meta, catalog, reciters] = await Promise.all([
+  const [meta, reciters] = await Promise.all([
     getChapterMeta(surah),
-    getTranslations(),
     getReciters(),
   ]);
 
-  const selectedT = parseIdList(searchParams?.t) ?? pickDefaultTranslation(catalog);
+  // Translation IDs come from URL params (synced from user settings via SurahContentWrapper)
+  const selectedT = parseIdList(searchParams?.t);
   const selectedTL = parseIdList(searchParams?.tl); // Transliterations (optional, no default)
   const selectedR = parseIdList(searchParams?.r)?.[0] ?? pickDefaultReciter(reciters);
+  // Word-by-word translation language ID from URL (wt param)
+  const wordTranslationLangId = searchParams?.wt ? parseInt(searchParams.wt, 10) : undefined;
+
+  // Look up ISO code for word-by-word translation language
+  // API expects ISO code (e.g., "ur") not numeric ID (e.g., 38)
+  const wordTranslationIsoCode = wordTranslationLangId && !isNaN(wordTranslationLangId)
+    ? await getLanguageIsoCode(wordTranslationLangId)
+    : null;
 
   const [data, surahAudio] = await Promise.all([
-    fetchVerses(surah, { translationIds: selectedT, transliterationIds: selectedTL, reciterId: selectedR }),
+    fetchVerses(surah, {
+      translationIds: selectedT,
+      transliterationIds: selectedTL,
+      reciterId: selectedR,
+      wordTranslationIsoCode: wordTranslationIsoCode || undefined,
+    }),
     getSurahAudio(selectedR, surah),
   ]);
 
@@ -312,10 +316,10 @@ export default async function SurahPage({
         {/* HEADER */}
         <SurahTitle id={data.chapter} arabicName={meta.arabicName} englishNick={meta.englishNick} />
 
-        {/* Controls (single row) */}
-        <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
+        {/* Controls row: Surah selector (left) | Reciter selector (right) */}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <SurahPicker currentSurah={data.chapter} />
           <ReciterPicker reciters={reciters} selectedId={selectedR} />
-          <TranslationMultiPicker translations={catalog} selectedIds={selectedT} />
         </div>
 
         {/* Subscribe + paint bookmark highlights */}

@@ -62,9 +62,11 @@ export default function VerseDisplay({
   const quranFontClass =
     fontVariant === "indopak" ? "font-quran-indopak" : "font-quran"; // Default Uthmani
 
-  // Word-by-word settings
-  const showWordTranslation = settings.wordByWordTranslationId !== null;
-  const showWordTransliteration = settings.wordByWordTransliterationId !== null;
+  // Word-by-word settings (unified language, separate toggles)
+  // Only show if language is selected AND toggle is on
+  const hasWordByWordLanguage = settings.wordByWordLanguageId !== null;
+  const showWordTranslation = hasWordByWordLanguage && settings.showWordByWordTranslation;
+  const showWordTransliteration = hasWordByWordLanguage && settings.showWordByWordTransliteration;
   const wordByWordEnabled = showWordTranslation || showWordTransliteration;
 
   // Debug logging (only for first verse)
@@ -77,8 +79,10 @@ export default function VerseDisplay({
       transliterationFontScale,
       translationIds: settings.translationIds,
       transliterationIds: settings.transliterationIds,
-      wordByWordTranslationId: settings.wordByWordTranslationId,
-      wordByWordTransliterationId: settings.wordByWordTransliterationId,
+      wordByWordLanguageId: settings.wordByWordLanguageId,
+      showWordByWordTranslation: settings.showWordByWordTranslation,
+      showWordByWordTransliteration: settings.showWordByWordTransliteration,
+      wordByWordEnabled,
     });
   }
 
@@ -94,9 +98,9 @@ export default function VerseDisplay({
         className="
           relative scroll-mt-28 md:scroll-mt-36
           rounded-2xl glass-surface glass-readable
-          p-5 md:p-6 pl-14 md:pl-16
+          pt-14 pb-6 px-5 md:pt-16 md:pb-8 md:px-6 pl-14 md:pl-16
           flex flex-col justify-center
-          overflow-hidden
+          overflow-visible
         "
       >
         {/* Action column + tiny verse label */}
@@ -126,12 +130,12 @@ export default function VerseDisplay({
         <div
           className={cn(
             quranFontClass,
-            "leading-relaxed break-words flex flex-wrap gap-x-2"
+            "leading-relaxed break-words flex flex-wrap gap-x-3"
           )}
           dir="rtl"
           style={{
-            fontSize: `${2.0 * quranFontScale}rem`,
-            lineHeight: 1.6,
+            fontSize: `${2.5 * quranFontScale}rem`,
+            lineHeight: 2.0,
           }}
         >
           {verse.words.map((word, idx) => {
@@ -169,19 +173,19 @@ export default function VerseDisplay({
           )}
           dir="rtl"
           style={{
-            fontSize: `${2.0 * quranFontScale}rem`, // Base 2.0rem (32px), scalable up to 4.0rem (64px) at 200%
-            lineHeight: 1.6,
+            fontSize: `${2.5 * quranFontScale}rem`,
+            lineHeight: 2.0,
           }}
         >
           {arabicText}
         </div>
       ) : isGlyphBased && verse.words ? (
         <div
-          className="leading-relaxed break-words flex flex-wrap gap-x-1 text-foreground"
+          className="leading-relaxed break-words flex flex-wrap gap-x-2 text-foreground"
           dir="rtl"
           style={{
-            fontSize: `${2.0 * quranFontScale}rem`,
-            lineHeight: 1.6,
+            fontSize: `${2.5 * quranFontScale}rem`,
+            lineHeight: 2.0,
           }}
         >
           {verse.words.map((word, idx) => {
@@ -261,8 +265,8 @@ export default function VerseDisplay({
           className={cn(quranFontClass, "leading-relaxed break-words")}
           dir="rtl"
           style={{
-            fontSize: `${2.0 * quranFontScale}rem`,
-            lineHeight: 1.6,
+            fontSize: `${2.5 * quranFontScale}rem`,
+            lineHeight: 2.0,
           }}
         >
           {arabicText}
@@ -273,11 +277,11 @@ export default function VerseDisplay({
       {settings.translationIds.length > 0 && verse.translations.map((t, i) => (
         <div
           key={`t-${i}`}
-          className="mt-4 leading-relaxed text-muted-foreground break-words"
+          className="mt-6 leading-relaxed text-muted-foreground break-words"
           dir="ltr"
           style={{
-            fontSize: `${1.125 * translationFontScale}rem`, // Base 1.125rem (18px), scalable up to 2.25rem (36px) at 2x
-            lineHeight: 1.75,
+            fontSize: `${1.25 * translationFontScale}rem`,
+            lineHeight: 1.8,
           }}
         >
           {t.text}
@@ -289,11 +293,11 @@ export default function VerseDisplay({
       {settings.transliterationIds.length > 0 && verse.transliterations.map((tl, i) => (
         <div
           key={`tl-${i}`}
-          className="mt-3 leading-relaxed text-muted-foreground/80 italic break-words"
+          className="mt-4 leading-relaxed text-muted-foreground/80 italic break-words"
           dir="ltr"
           style={{
-            fontSize: `${1 * transliterationFontScale}rem`, // Base 1rem (16px), scalable up to 2rem (32px) at 2x
-            lineHeight: 1.75,
+            fontSize: `${1.125 * transliterationFontScale}rem`,
+            lineHeight: 1.8,
           }}
         >
           {tl.text}
