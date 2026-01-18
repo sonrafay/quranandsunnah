@@ -646,7 +646,7 @@ export default function SettingsPage() {
             <button
               key={key}
               className={cn(
-                "h-9 px-4 rounded-lg glass-surface glass-readable text-sm font-medium transition-all",
+                "group h-10 px-4 rounded-full glass-surface glass-readable text-sm font-medium transition-all",
                 settings.theme === key && "bg-green-500/20 text-green-600 dark:text-green-400"
               )}
               onClick={() => {
@@ -795,7 +795,7 @@ export default function SettingsPage() {
         <div className="space-y-5">
           {/* Language selector - filtered to supported languages only */}
           <div className="flex items-center gap-4">
-            <div className="text-sm font-medium w-40">Language</div>
+            <div className="text-sm font-medium w-32">Language</div>
             <NullableSingleSelectPopover
               id="wbwLanguage"
               isOpen={openPopover === "wbwLanguage"}
