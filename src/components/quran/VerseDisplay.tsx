@@ -146,6 +146,9 @@ export default function VerseDisplay({
 
             if (!displayText) return null;
 
+            // Word index is 1-based for audio (idx is 0-based)
+            const wordIndex = idx + 1;
+
             if (!isEndMarker) {
               return (
                 <WordHoverTooltip
@@ -155,6 +158,9 @@ export default function VerseDisplay({
                   showTranslation={showWordTranslation}
                   showTransliteration={showWordTransliteration}
                   fontScale={quranFontScale}
+                  surah={chapter}
+                  ayah={verse.n}
+                  wordIndex={wordIndex}
                 >
                   <span>{displayText}</span>
                 </WordHoverTooltip>
@@ -235,6 +241,9 @@ export default function VerseDisplay({
               </span>
             );
 
+            // Word index is 1-based for audio (idx is 0-based)
+            const wordIndex = idx + 1;
+
             // If word-by-word is enabled and this is not an end marker, wrap with tooltip
             if (wordByWordEnabled && !isEndMarker) {
               return (
@@ -245,6 +254,9 @@ export default function VerseDisplay({
                   showTranslation={showWordTranslation}
                   showTransliteration={showWordTransliteration}
                   fontScale={quranFontScale}
+                  surah={chapter}
+                  ayah={verse.n}
+                  wordIndex={wordIndex}
                 >
                   {wordContent}
                 </WordHoverTooltip>

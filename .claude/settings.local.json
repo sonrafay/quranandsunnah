@@ -7,7 +7,11 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(timeout /t 3 /nobreak)",
-      "Bash(firebase deploy:*)"
+      "Bash(firebase deploy:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx next lint:*)"
     ]
   }
 }

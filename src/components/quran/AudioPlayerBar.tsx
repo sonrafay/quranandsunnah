@@ -1,23 +1,38 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX, X } from "lucide-react";
+import {
+  getWordAudioController,
+  WORD_AUDIO_EVENTS,
+  emitWordHighlight,
+} from "@/lib/wordAudio";
 
 export type Segment = { n: number; start: number; end: number };
 export type AudioItem = { n: number; key: string; url: string };
+
+// Word-level segment for word-by-word highlighting
+// Each segment contains: verse number, word index (1-based), start time (seconds), end time (seconds)
+export type WordSegment = { verseNum: number; wordIndex: number; start: number; end: number };
+
+// Word counts per verse - will be populated from verse data
+type VerseWordCounts = Map<number, number>; // ayah number -> word count
 
 type SingleProps = {
   mode: "single";
   surah: number;
   trackUrl: string;
   segments: Segment[];          // verse timings within the single track
+  wordSegments?: WordSegment[]; // word-level timings for word highlighting
   totalDuration?: number;       // full surah duration (sec) if API supplies it
+  wordCounts?: VerseWordCounts; // word counts per verse for word-by-word audio
 };
 
 type PerAyahProps = {
   mode: "perAyah";
   surah: number;
   items: AudioItem[];           // one url per verse
+  wordCounts?: VerseWordCounts; // word counts per verse for word-by-word audio
 };
 
 type Props = SingleProps | PerAyahProps;
@@ -49,6 +64,7 @@ export default function AudioPlayerBar(props: Props) {
 
   const isSingle = props.mode === "single";
   const segments = isSingle ? (props as SingleProps).segments : [];
+  const wordSegments = isSingle ? (props as SingleProps).wordSegments : undefined;
   const items    = !isSingle ? (props as PerAyahProps).items : [];
   const totalOverride = isSingle ? (props as SingleProps).totalDuration : undefined;
 
@@ -165,6 +181,59 @@ export default function AudioPlayerBar(props: Props) {
     window.localStorage.setItem("qs-muted", muted ? "1" : "0");
   }, [volume, muted]);
 
+  // ------- Word click audio integration -------
+  // Word-by-word audio is now click-only (not synced to verse playback)
+  // This avoids inaccurate timing from playing word audio files sequentially
+
+  // Lazy initialization to avoid SSR issues
+  const wordAudioRef = useRef<ReturnType<typeof getWordAudioController> | null>(null);
+  const getWordAudio = useCallback(() => {
+    if (!wordAudioRef.current && typeof window !== "undefined") {
+      wordAudioRef.current = getWordAudioController();
+    }
+    return wordAudioRef.current;
+  }, []);
+
+  // Track if verse audio is paused due to word click playback
+  const clickPausedRef = useRef(false);
+  const savedTimeRef = useRef(0);
+
+  // Handle word click playback events (pause verse audio while word audio plays)
+  useEffect(() => {
+    const handleClickStart = () => {
+      const a = audioRef.current;
+      if (a && playing) {
+        savedTimeRef.current = a.currentTime;
+        clickPausedRef.current = true;
+        a.pause();
+      }
+    };
+
+    const handleClickEnd = () => {
+      const a = audioRef.current;
+      if (a && clickPausedRef.current) {
+        clickPausedRef.current = false;
+        // Resume from where we left off
+        a.currentTime = savedTimeRef.current;
+        a.play().catch(() => {});
+      }
+    };
+
+    window.addEventListener(WORD_AUDIO_EVENTS.HOVER_PLAYBACK_START, handleClickStart);
+    window.addEventListener(WORD_AUDIO_EVENTS.HOVER_PLAYBACK_END, handleClickEnd);
+
+    return () => {
+      window.removeEventListener(WORD_AUDIO_EVENTS.HOVER_PLAYBACK_START, handleClickStart);
+      window.removeEventListener(WORD_AUDIO_EVENTS.HOVER_PLAYBACK_END, handleClickEnd);
+    };
+  }, [playing]);
+
+  // Cleanup word audio on close
+  const stopWordAudio = useCallback(() => {
+    const controller = getWordAudio();
+    controller?.stop();
+  }, [getWordAudio]);
+
   // ------- highlight + auto-scroll helpers -------
   function highlightAyah(n?: number) {
     if (!n) return;
@@ -218,10 +287,115 @@ export default function AudioPlayerBar(props: Props) {
     if (!isSingle && activated) highlightAyah(currentAyah);
   }, [isSingle, currentAyah, activated]);
 
+  // ------- Word-by-word highlighting based on word segments -------
+  // Track the currently highlighted word to avoid redundant events
+  const prevWordRef = useRef<{ verseNum: number; wordIndex: number } | null>(null);
+
+  // Clear all word highlights
+  const clearWordHighlights = useCallback(() => {
+    if (prevWordRef.current) {
+      emitWordHighlight(
+        props.surah,
+        prevWordRef.current.verseNum,
+        prevWordRef.current.wordIndex,
+        false
+      );
+      prevWordRef.current = null;
+    }
+  }, [props.surah]);
+
+  // Word highlighting RAF loop for single mode with word segments
+  useEffect(() => {
+    if (!isSingle || !wordSegments?.length) return;
+    const a = audioRef.current;
+    if (!a) return;
+
+    let raf = 0;
+
+    const tick = () => {
+      // Only highlight when playing and activated
+      if (!playing || !activated) {
+        // Clear highlight when not playing
+        if (prevWordRef.current) {
+          clearWordHighlights();
+        }
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+
+      const currentTime = a.currentTime;
+
+      // Binary search to find current word segment
+      // Segments are sorted by start time
+      let lo = 0;
+      let hi = wordSegments.length - 1;
+      let foundSegment: WordSegment | null = null;
+
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        const seg = wordSegments[mid];
+
+        if (currentTime >= seg.start && currentTime < seg.end) {
+          // Found exact match
+          foundSegment = seg;
+          break;
+        } else if (currentTime < seg.start) {
+          hi = mid - 1;
+        } else {
+          lo = mid + 1;
+        }
+      }
+
+      // Update highlight state
+      const prev = prevWordRef.current;
+
+      if (foundSegment) {
+        // Check if this is a different word than currently highlighted
+        if (
+          !prev ||
+          prev.verseNum !== foundSegment.verseNum ||
+          prev.wordIndex !== foundSegment.wordIndex
+        ) {
+          // Clear previous highlight first
+          if (prev) {
+            emitWordHighlight(props.surah, prev.verseNum, prev.wordIndex, false);
+          }
+          // Highlight new word
+          emitWordHighlight(
+            props.surah,
+            foundSegment.verseNum,
+            foundSegment.wordIndex,
+            true
+          );
+          prevWordRef.current = {
+            verseNum: foundSegment.verseNum,
+            wordIndex: foundSegment.wordIndex,
+          };
+        }
+      } else {
+        // No segment found for current time - clear any existing highlight
+        if (prev) {
+          emitWordHighlight(props.surah, prev.verseNum, prev.wordIndex, false);
+          prevWordRef.current = null;
+        }
+      }
+
+      raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      // Clear highlight on cleanup
+      clearWordHighlights();
+    };
+  }, [isSingle, wordSegments, playing, activated, props.surah, clearWordHighlights]);
+
   // ------- play from verse (both modes) -------
   useEffect(() => {
     function handler(e: Event) {
-      const d: any = (e as CustomEvent).detail || {};
+      const d = (e as CustomEvent).detail as { n?: number; index?: number } || {};
       const n: number | undefined = typeof d.n === "number" ? d.n : undefined;
       const byIndex: number | undefined = typeof d.index === "number" ? d.index : undefined;
 
@@ -310,6 +484,11 @@ export default function AudioPlayerBar(props: Props) {
     const a = audioRef.current; if (!a) return;
     setActivated(true);
 
+    // Stop any word audio that might be playing from a click
+    getWordAudio()?.stop();
+    // Clear word highlights - they'll be updated on next RAF tick
+    clearWordHighlights();
+
     if (isSingle) {
       const total = (typeof totalOverride === "number" && totalOverride > 0) ? totalOverride : duration;
       if (!total) return;
@@ -358,11 +537,22 @@ export default function AudioPlayerBar(props: Props) {
     setPlaying(false);
     setVisible(false);
     setActivated(false);
+    clickPausedRef.current = false;
 
-    // remove highlight if any
+    // Stop word audio and clear word highlights
+    stopWordAudio();
+    clearWordHighlights();
+
+    // remove verse highlight if any
     document.querySelectorAll<HTMLElement>("[data-active-ayah]").forEach((e) => {
       e.removeAttribute("data-active-ayah");
       e.classList.remove("active-ayah");
+    });
+
+    // remove word highlights if any
+    document.querySelectorAll<HTMLElement>("[data-active-word]").forEach((e) => {
+      e.removeAttribute("data-active-word");
+      e.classList.remove("active-word");
     });
   }
 
@@ -410,7 +600,7 @@ export default function AudioPlayerBar(props: Props) {
           <SkipForward className="h-4 w-4" />
         </button>
 
-        {/* global timeline */}
+        {/* Audio timeline scrubber */}
         <div className="flex-1 flex items-center gap-3">
           <div
             className="relative w-full h-2 rounded bg-foreground/10 cursor-pointer"
