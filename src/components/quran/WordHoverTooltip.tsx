@@ -4,7 +4,6 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
   getWordAudioController,
-  emitHoverPlaybackState,
   WORD_AUDIO_EVENTS,
 } from "@/lib/wordAudio";
 
@@ -16,6 +15,7 @@ type WordHoverTooltipProps = {
   showTransliteration: boolean;
   fontScale: number; // Scale factor for tooltip text size
   className?: string;
+  active?: boolean;
   // Audio context for word playback
   surah?: number;
   ayah?: number;
@@ -30,6 +30,7 @@ export default function WordHoverTooltip({
   showTransliteration,
   fontScale,
   className,
+  active,
   surah,
   ayah,
   wordIndex,
@@ -40,6 +41,8 @@ export default function WordHoverTooltip({
   const wordRef = useRef<HTMLSpanElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const isPlayingClickAudio = useRef(false);
+  const useExternalHighlight = typeof active === "boolean";
+  const resolvedHighlight = useExternalHighlight ? active : isHighlighted;
 
   // Check if we should show the tooltip at all
   const hasContent =
@@ -47,6 +50,7 @@ export default function WordHoverTooltip({
 
   // Listen for word highlight events from audio playback
   useEffect(() => {
+    if (useExternalHighlight) return;
     if (!surah || !ayah || !wordIndex) return;
 
     const handleHighlightStart = (e: Event) => {
@@ -78,7 +82,7 @@ export default function WordHoverTooltip({
       window.removeEventListener(WORD_AUDIO_EVENTS.WORD_HIGHLIGHT_START, handleHighlightStart);
       window.removeEventListener(WORD_AUDIO_EVENTS.WORD_HIGHLIGHT_END, handleHighlightEnd);
     };
-  }, [surah, ayah, wordIndex]);
+  }, [surah, ayah, wordIndex, useExternalHighlight]);
 
   // Handle hover: show tooltip only, no audio
   const handleMouseEnter = useCallback(() => {
@@ -109,7 +113,6 @@ export default function WordHoverTooltip({
     if (!surah || !ayah || !wordIndex || isPlayingClickAudio.current) return;
 
     isPlayingClickAudio.current = true;
-    emitHoverPlaybackState(true); // Signal verse audio to pause
 
     const controller = getWordAudioController();
     controller.playSingleWord(surah, ayah, wordIndex)
@@ -121,7 +124,6 @@ export default function WordHoverTooltip({
       })
       .finally(() => {
         isPlayingClickAudio.current = false;
-        emitHoverPlaybackState(false); // Signal verse audio can resume
       });
   }, [surah, ayah, wordIndex]);
 
@@ -143,13 +145,13 @@ export default function WordHoverTooltip({
       data-surah={surah}
       data-ayah={ayah}
       data-word-index={wordIndex}
-      data-active-word={isHighlighted ? "1" : undefined}
+      data-active-word={resolvedHighlight ? "1" : undefined}
       className={cn(
         "relative inline-block cursor-pointer transition-all duration-150",
         // Hover state (user hovering)
         isHovered && "text-green-600 dark:text-green-400",
         // Highlight state (from audio playback) - subtle glow effect
-        isHighlighted && !isHovered && [
+        resolvedHighlight && !isHovered && [
           "text-amber-600 dark:text-amber-400",
           "drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]",
         ],

@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { qfGet } from "@/lib/server/qf";
 import ReciterPicker, { Reciter } from "@/components/quran/ReciterPicker";
-import ScrollProgressBar from "@/components/ScrollProgressBar";
 import SurahFooterNav from "@/components/quran/SurahFooterNav";
 import AudioPlayerBar, { AudioItem, Segment, WordSegment } from "@/components/quran/AudioPlayerBar";
 import SurahTitle from "@/components/quran/SurahTitle";
@@ -49,6 +48,13 @@ type QFChapter = {
   translated_name?: { language_name?: string; name?: string };
 };
 
+type PerAyahSegmentsResponse = {
+  audio_files?: Array<{
+    verse_key?: string;
+    segments?: string[];
+  }>;
+};
+
 function absolutizeAudio(url?: string): string | undefined {
   if (!url) return undefined;
   if (/^https?:\/\//i.test(url)) return url;
@@ -90,98 +96,153 @@ async function getSurahAudio(
     return null; // Fall back to per-verse mode (audioItems will be populated in fetchVerses)
   }
 
-  // Standard reciters use Quran.Foundation API
-  type AudioFile = {
-    url?: string;
-    duration?: number;
-    segments?: unknown[][];
-  };
-
   try {
-    const res = await qfGet<{ audio_files: AudioFile[] }>(
-      `/recitations/${reciterId}/audio_files`,
-      { query: { chapter_number: surah, fields: "url,duration,segments" }, revalidate: 60 * 60 }
-    );
-    const af = res.audio_files?.[0];
-    if (!af?.url) return null;
-
-    const url = absolutizeAudio(af.url) ?? "";
-    const duration = typeof af.duration === "number" ? af.duration : undefined;
-
-    // Raw segments format: [[[startMs, durationMs, verseIdx], ...]]
-    // Each triplet is a word, verseIdx identifies which verse (0-based)
-    const raw: unknown[] =
-      Array.isArray(af.segments) && Array.isArray(af.segments[0])
-        ? (af.segments[0] as unknown[])
-        : [];
-
-    // Build verse-level segments (for verse highlighting and navigation)
-    // Group by verse index and find min start / max end
-    const verseStarts = new Map<number, number>();
-    const verseEnds = new Map<number, number>();
-
-    for (const triple of raw) {
-      if (!Array.isArray(triple) || triple.length < 3) continue;
-      const [startMs, durMs, verseIdx] = triple;
-      if (typeof verseIdx !== "number" || verseIdx < 0) continue;
-      if (typeof startMs !== "number" || typeof durMs !== "number") continue;
-
-      const start = startMs / 1000;
-      const end = (startMs + durMs) / 1000;
-
-      if (!verseStarts.has(verseIdx) || start < verseStarts.get(verseIdx)!) {
-        verseStarts.set(verseIdx, start);
-      }
-      if (!verseEnds.has(verseIdx) || end > verseEnds.get(verseIdx)!) {
-        verseEnds.set(verseIdx, end);
-      }
+    const chapterUrl = `https://api.quran.com/api/v4/chapter_recitations/${reciterId}/${surah}?segments=true`;
+    const chapterRes = await fetch(chapterUrl, { next: { revalidate: 60 * 60 } });
+    if (!chapterRes.ok) {
+      const text = await chapterRes.text().catch(() => "");
+      throw new Error(`Quran.com API ${chapterRes.status}: ${text}`);
     }
 
-    const segments: Segment[] = Array.from(verseStarts.keys())
-      .sort((a, b) => a - b)
-      .map((verseIdx) => ({
-        n: verseIdx + 1, // 1-based verse number
-        start: verseStarts.get(verseIdx)!,
-        end: verseEnds.get(verseIdx)!,
-      }))
-      .filter((s) => Number.isFinite(s.start) && Number.isFinite(s.end) && s.end > s.start);
+    const data = (await chapterRes.json()) as {
+      audio_file?: {
+        audio_url?: string;
+        timestamps?: Array<{
+          verse_key?: string;
+          timestamp_from?: number;
+          timestamp_to?: number;
+          segments?: Array<number[] | string>;
+        }>;
+      };
+    };
 
-    // Build word-level segments for word-by-word highlighting
-    // Track word index within each verse
-    const wordCountPerVerse = new Map<number, number>();
+    const audioUrl = data.audio_file?.audio_url;
+    if (!audioUrl) return null;
+
+    const url = absolutizeAudio(audioUrl) ?? "";
+    const timestamps = data.audio_file?.timestamps ?? [];
+
+    const segments: Segment[] = [];
     const wordSegments: WordSegment[] = [];
 
-    for (const triple of raw) {
-      if (!Array.isArray(triple) || triple.length < 3) continue;
-      const [startMs, durMs, verseIdx] = triple;
-      if (typeof verseIdx !== "number" || verseIdx < 0) continue;
-      if (typeof startMs !== "number" || typeof durMs !== "number") continue;
+    for (const ts of timestamps) {
+      if (!ts?.verse_key) continue;
+      const parts = ts.verse_key.split(":");
+      if (parts.length !== 2) continue;
+      const ayah = Number(parts[1]);
+      if (!Number.isFinite(ayah)) continue;
 
-      const start = startMs / 1000;
-      const end = (startMs + durMs) / 1000;
+      if (typeof ts.timestamp_from === "number" && typeof ts.timestamp_to === "number") {
+        const start = ts.timestamp_from / 1000;
+        const end = ts.timestamp_to / 1000;
+        if (Number.isFinite(start) && Number.isFinite(end) && end > start) {
+          segments.push({ n: ayah, start, end });
+        }
+      }
 
-      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue;
+      for (const seg of ts.segments ?? []) {
+        const nums = Array.isArray(seg)
+          ? seg.map((n) => Number(n)).filter((n) => Number.isFinite(n))
+          : typeof seg === "string"
+            ? seg.trim().split(/\s+/).map((n) => Number(n)).filter((n) => Number.isFinite(n))
+            : [];
 
-      // Increment word index for this verse (1-based)
-      const wordIndex = (wordCountPerVerse.get(verseIdx) ?? 0) + 1;
-      wordCountPerVerse.set(verseIdx, wordIndex);
+        if (nums.length < 3) continue;
+        let wordIndex = nums[0];
+        let startMs = nums[1];
+        let endMs = nums[2];
+        if (nums.length >= 4) {
+          wordIndex = nums[1];
+          startMs = nums[2];
+          endMs = nums[3];
+        }
+        if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) continue;
 
-      wordSegments.push({
-        verseNum: verseIdx + 1, // 1-based verse number
-        wordIndex,              // 1-based word index within verse
-        start,
-        end,
-      });
+        wordSegments.push({
+          verseNum: ayah,
+          wordIndex: Math.max(1, Math.trunc(wordIndex)),
+          start: startMs / 1000,
+          end: endMs / 1000,
+        });
+      }
     }
 
-    // Sort word segments by start time for efficient binary search
+    segments.sort((a, b) => a.start - b.start);
     wordSegments.sort((a, b) => a.start - b.start);
 
     if (!segments.length) return null;
-    return { url, segments, wordSegments, duration };
-  } catch {
+    return { url, segments, wordSegments };
+  } catch (err) {
+    console.error("[getSurahAudio] failed", reciterId, surah, err);
     return null;
   }
+}
+
+async function getPerAyahWordSegments(
+  reciterId: number,
+  surah: string
+): Promise<Record<number, WordSegment[]>> {
+  const reciter = getReciterById(reciterId);
+  if (reciter?.sourceType === "legacy_qdc") {
+    return {};
+  }
+
+  const url = `https://api.quran.com/api/v4/recitations/${reciterId}/by_chapter/${surah}?fields=segments`;
+  const res = await fetch(url, { next: { revalidate: 60 * 60 } });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    console.warn("[getPerAyahWordSegments] failed", reciterId, surah, res.status, text);
+    return {};
+  }
+
+  const data = (await res.json()) as PerAyahSegmentsResponse;
+  const byAyah: Record<number, WordSegment[]> = {};
+
+  for (const audio of data.audio_files ?? []) {
+    if (!audio.verse_key) continue;
+    const parts = audio.verse_key.split(":");
+    if (parts.length !== 2) continue;
+    const ayahNum = Number(parts[1]);
+    if (!Number.isFinite(ayahNum)) continue;
+
+    const segments: WordSegment[] = [];
+    for (const seg of audio.segments ?? []) {
+      if (typeof seg !== "string") continue;
+      const nums = seg
+        .trim()
+        .split(/\s+/)
+        .map((n) => Number(n))
+        .filter((n) => Number.isFinite(n));
+
+      if (nums.length < 3) continue;
+
+      let wordIndex = nums[0];
+      let startMs = nums[1];
+      let endMs = nums[2];
+
+      if (nums.length >= 4) {
+        wordIndex = nums[1];
+        startMs = nums[2];
+        endMs = nums[3];
+      }
+
+      if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) continue;
+
+      segments.push({
+        verseNum: ayahNum,
+        wordIndex: Math.max(1, Math.trunc(wordIndex)),
+        start: startMs / 1000,
+        end: endMs / 1000,
+      });
+    }
+
+    segments.sort((a, b) => a.start - b.start);
+    if (segments.length) {
+      byAyah[ayahNum] = segments;
+    }
+  }
+
+  return byAyah;
 }
 
 function parseIdList(param?: string): number[] | undefined {
@@ -263,7 +324,7 @@ async function fetchVerses(
   try {
     const data = await qfGet<{ verses: QFVerse[] }>(`/verses/by_chapter/${surah}`, {
       query,
-      revalidate: 60 * 60,
+      cache: "no-store",
     });
 
     const verses = (data.verses ?? []).map((v) => {
@@ -321,7 +382,7 @@ async function fetchVerses(
   } catch {
     const fallback = await qfGet<{ verses: QFVerse[] }>(`/verses/by_chapter/${surah}`, {
       query: baseQuery,
-      revalidate: 60 * 60,
+      cache: "no-store",
     });
     const verses = (fallback.verses ?? []).map((v) => ({
       n: v.verse_number,
@@ -379,6 +440,8 @@ export default async function SurahPage({
     getSurahAudio(selectedR, surah),
   ]);
 
+  const perAyahWordSegments = surahAudio ? {} : await getPerAyahWordSegments(selectedR, surah);
+
   const audioItems: AudioItem[] = data.verses
     .map((v) => ({ n: v.n, key: v.key, url: v.audioUrl || "" }))
     .filter((x) => !!x.url);
@@ -395,7 +458,6 @@ export default async function SurahPage({
 
   return (
     <>
-      <ScrollProgressBar height={2} />
       <SurahSideNav current={data.chapter} />
 
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
@@ -432,9 +494,19 @@ export default async function SurahPage({
           wordSegments={surahAudio.wordSegments}
           totalDuration={surahAudio.duration}
           wordCounts={wordCounts}
+          reciters={reciters}
+          selectedReciterId={selectedR}
         />
       ) : (
-        <AudioPlayerBar mode="perAyah" surah={data.chapter} items={audioItems} wordCounts={wordCounts} />
+        <AudioPlayerBar
+          mode="perAyah"
+          surah={data.chapter}
+          items={audioItems}
+          wordSegmentsByAyah={perAyahWordSegments}
+          wordCounts={wordCounts}
+          reciters={reciters}
+          selectedReciterId={selectedR}
+        />
       )}
     </>
   );

@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 
@@ -10,17 +9,19 @@ export type Reciter = { id: number; name: string };
 export default function ReciterPicker({
   reciters,
   selectedId,
+  direction = "down",
+  align = "right",
 }: {
   reciters: Reciter[];
   selectedId: number;
+  direction?: "down" | "up";
+  align?: "left" | "right";
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeId, setActiveId] = useState(selectedId);
 
-  const currentReciter = reciters.find((r) => r.id === selectedId);
+  const currentReciter = reciters.find((r) => r.id === activeId);
 
   const filteredReciters = useMemo(() => {
     if (!searchTerm) return reciters;
@@ -28,11 +29,26 @@ export default function ReciterPicker({
     return reciters.filter((r) => r.name.toLowerCase().includes(q));
   }, [reciters, searchTerm]);
 
+  useEffect(() => {
+    setActiveId(selectedId);
+  }, [selectedId]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { id?: number };
+      if (typeof detail?.id !== "number") return;
+      setActiveId(detail.id);
+    };
+    window.addEventListener("qs-reciter-change", handler as EventListener);
+    return () => window.removeEventListener("qs-reciter-change", handler as EventListener);
+  }, []);
+
   function selectReciter(id: number) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("r", String(id));
-    router.replace(`${pathname}?${params.toString()}`);
+    setActiveId(id);
     setOpen(false);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("qs-reciter-change", { detail: { id } }));
+    }
   }
 
   return (
@@ -57,7 +73,8 @@ export default function ReciterPicker({
         </span>
         <ChevronDown className={cn(
           "h-4 w-4 transition-transform duration-200",
-          open && "rotate-180"
+          direction === "up" ? "rotate-180" : "",
+          open && direction === "down" && "rotate-180"
         )} />
       </button>
 
@@ -72,7 +89,14 @@ export default function ReciterPicker({
           />
 
           {/* Dropdown panel */}
-          <div className="absolute right-0 z-40 mt-2 w-[300px] rounded-xl glass-surface glass-readable p-3">
+          <div
+            className={cn(
+              "absolute z-40 w-[300px] rounded-xl glass-surface glass-readable p-3",
+              "animate-in fade-in-0 zoom-in-95",
+              direction === "up" ? "bottom-full mb-2 slide-in-from-bottom-2" : "top-full mt-2 slide-in-from-top-2",
+              align === "left" ? "left-0" : "right-0"
+            )}
+          >
             {/* Search */}
             <div className="mb-2">
               <input
@@ -93,7 +117,7 @@ export default function ReciterPicker({
                   className={cn(
                     "w-full text-left px-3 py-2 rounded-lg text-sm",
                     "transition-all duration-150",
-                    reciter.id === selectedId
+                    reciter.id === activeId
                       ? "bg-green-500/15 text-green-600 dark:text-green-400"
                       : "hover:bg-muted/50 hover:text-green-600 dark:hover:text-green-400"
                   )}
