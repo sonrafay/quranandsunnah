@@ -182,6 +182,20 @@ html {
   transition: background 120ms linear, outline-color 120ms linear;
 }
 
+/* Active word highlight (word-by-word audio timing) */
+[data-active-word="1"],
+.active-word {
+  color: #f59e0b !important; /* amber-500 */
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+  transition: color 100ms ease-out, filter 100ms ease-out;
+}
+
+.dark [data-active-word="1"],
+.dark .active-word {
+  color: #fbbf24 !important; /* amber-400 */
+  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.7));
+}
+
 /* Smooth theme transitions - applied directly to root for consistency */
 html {
   transition: background-color var(--theme-transition-duration) var(--theme-transition-easing);

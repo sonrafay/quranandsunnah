@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useReadingSettings } from "./ReadingSettingsProvider";
 import { cn } from "@/lib/utils";
 import VerseActions from "./VerseActions";
@@ -29,12 +30,20 @@ type Verse = {
   transliterations: { text: string; source?: string; resourceId?: number }[];
 };
 
+type ActiveReciterWord = {
+  surah: number;
+  ayah: number;
+  wordIndex: number;
+} | null;
+
 export default function VerseDisplay({
   verse,
   chapter,
+  activeReciterWord,
 }: {
   verse: Verse;
   chapter: number;
+  activeReciterWord: ActiveReciterWord;
 }) {
   const settings = useReadingSettings();
 
@@ -68,21 +77,26 @@ export default function VerseDisplay({
   const showWordTranslation = hasWordByWordLanguage && settings.showWordByWordTranslation;
   const showWordTransliteration = hasWordByWordLanguage && settings.showWordByWordTransliteration;
   const wordByWordEnabled = showWordTranslation || showWordTransliteration;
+  const renderedWordCount = useMemo(
+    () => (verse.words ? verse.words.filter((w) => w.char_type_name !== "end").length : 0),
+    [verse.words]
+  );
 
-  // Debug logging (only for first verse)
-  if (verse.n === 1) {
-    console.log("[VerseDisplay] Applied settings:", {
-      quranFont: settings.quranFont,
-      quranFontClass,
-      quranFontScale,
-      translationFontScale,
-      transliterationFontScale,
-      translationIds: settings.translationIds,
-      transliterationIds: settings.transliterationIds,
-      wordByWordLanguageId: settings.wordByWordLanguageId,
-      showWordByWordTranslation: settings.showWordByWordTranslation,
-      showWordByWordTransliteration: settings.showWordByWordTransliteration,
-      wordByWordEnabled,
+  const matchesAyah = activeReciterWord?.ayah === verse.n;
+  const activeWordIndex =
+    activeReciterWord?.surah === chapter && matchesAyah
+      ? activeReciterWord.wordIndex
+      : null;
+  const isActiveWordValid =
+    activeWordIndex !== null &&
+    (!renderedWordCount || activeWordIndex <= renderedWordCount);
+
+  if (activeWordIndex !== null && !isActiveWordValid) {
+    console.warn("[VerseDisplay] Word index out of range:", {
+      chapter,
+      ayah: verse.n,
+      wordIndex: activeWordIndex,
+      renderedWordCount,
     });
   }
 
@@ -146,6 +160,14 @@ export default function VerseDisplay({
 
             if (!displayText) return null;
 
+            // Word index is 1-based for audio (idx is 0-based)
+            const wordIndex = idx + 1;
+
+            const isActiveReciterWord =
+              activeReciterWord?.surah === chapter &&
+              matchesAyah &&
+              activeReciterWord?.wordIndex === wordIndex;
+
             if (!isEndMarker) {
               return (
                 <WordHoverTooltip
@@ -155,6 +177,11 @@ export default function VerseDisplay({
                   showTranslation={showWordTranslation}
                   showTransliteration={showWordTransliteration}
                   fontScale={quranFontScale}
+                  surah={chapter}
+                  ayah={verse.n}
+                  wordIndex={wordIndex}
+                  active={isActiveWordValid && isActiveReciterWord}
+                  className={isActiveReciterWord ? "reciter-highlight" : undefined}
                 >
                   <span>{displayText}</span>
                 </WordHoverTooltip>
@@ -235,6 +262,14 @@ export default function VerseDisplay({
               </span>
             );
 
+            // Word index is 1-based for audio (idx is 0-based)
+            const wordIndex = idx + 1;
+
+            const isActiveReciterWord =
+              activeReciterWord?.surah === chapter &&
+              matchesAyah &&
+              activeReciterWord?.wordIndex === wordIndex;
+
             // If word-by-word is enabled and this is not an end marker, wrap with tooltip
             if (wordByWordEnabled && !isEndMarker) {
               return (
@@ -245,6 +280,11 @@ export default function VerseDisplay({
                   showTranslation={showWordTranslation}
                   showTransliteration={showWordTransliteration}
                   fontScale={quranFontScale}
+                  surah={chapter}
+                  ayah={verse.n}
+                  wordIndex={wordIndex}
+                  active={isActiveWordValid && isActiveReciterWord}
+                  className={isActiveReciterWord ? "reciter-highlight" : undefined}
                 >
                   {wordContent}
                 </WordHoverTooltip>

@@ -2,8 +2,10 @@
 
 import { ReadingSettingsProvider, useReadingSettings } from "./ReadingSettingsProvider";
 import VerseDisplay from "./VerseDisplay";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { WORD_AUDIO_EVENTS } from "@/lib/wordAudio";
+import ScrollProgressBar from "@/components/ScrollProgressBar";
 
 type Verse = {
   n: number;
@@ -12,6 +14,12 @@ type Verse = {
   translations: { text: string; source?: string; resourceId?: number }[];
   transliterations: { text: string; source?: string; resourceId?: number }[];
 };
+
+type ActiveReciterWord = {
+  surah: number;
+  ayah: number;
+  wordIndex: number;
+} | null;
 
 function SurahContentInner({
   chapter,
@@ -23,6 +31,7 @@ function SurahContentInner({
   const settings = useReadingSettings();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [activeReciterWord, setActiveReciterWord] = useState<ActiveReciterWord>(null);
 
   // Sync URL with settings to fetch correct translations/transliterations/word-by-word
   useEffect(() => {
@@ -75,23 +84,57 @@ function SurahContentInner({
         params.set("r", currentRParam);
       }
 
-      console.log("[SurahContentWrapper] Syncing URL with settings:", {
-        translationIds: settings.translationIds,
-        transliterationIds: settings.transliterationIds,
-        wordByWordLanguageId: settings.wordByWordLanguageId,
-        showWordByWordTranslation: settings.showWordByWordTranslation,
-        showWordByWordTransliteration: settings.showWordByWordTransliteration,
-      });
-
       // Update URL to trigger server refetch with correct IDs
       router.replace(`?${params.toString()}`);
     }
   }, [settings.translationIds, settings.transliterationIds, settings.wordByWordLanguageId, settings.showWordByWordTranslation, searchParams, router]);
 
+  useEffect(() => {
+    const handleHighlightStart = (e: Event) => {
+      const detail = (e as CustomEvent).detail as ActiveReciterWord;
+      if (detail?.surah == null || detail?.ayah == null || detail?.wordIndex == null) return;
+      setActiveReciterWord({
+        surah: detail.surah,
+        ayah: detail.ayah,
+        wordIndex: detail.wordIndex,
+      });
+    };
+
+    const handleHighlightEnd = (e: Event) => {
+      const detail = (e as CustomEvent).detail as ActiveReciterWord;
+      if (detail?.surah == null || detail?.ayah == null || detail?.wordIndex == null) return;
+      setActiveReciterWord((prev) => {
+        if (!prev) return prev;
+        if (
+          prev.surah === detail.surah &&
+          prev.ayah === detail.ayah &&
+          prev.wordIndex === detail.wordIndex
+        ) {
+          return null;
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener(WORD_AUDIO_EVENTS.WORD_HIGHLIGHT_START, handleHighlightStart);
+    window.addEventListener(WORD_AUDIO_EVENTS.WORD_HIGHLIGHT_END, handleHighlightEnd);
+
+    return () => {
+      window.removeEventListener(WORD_AUDIO_EVENTS.WORD_HIGHLIGHT_START, handleHighlightStart);
+      window.removeEventListener(WORD_AUDIO_EVENTS.WORD_HIGHLIGHT_END, handleHighlightEnd);
+    };
+  }, []);
+
   return (
     <div className="space-y-8">
+      <ScrollProgressBar height={2} />
       {verses.map((v) => (
-        <VerseDisplay key={v.key} verse={v} chapter={chapter} />
+        <VerseDisplay
+          key={v.key}
+          verse={v}
+          chapter={chapter}
+          activeReciterWord={activeReciterWord}
+        />
       ))}
     </div>
   );

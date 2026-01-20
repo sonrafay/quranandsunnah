@@ -88,7 +88,6 @@ export function ReadingSettingsProvider({ children }: { children: React.ReactNod
         const stored = await getReadingSettings(user.uid);
         if (!active) return;
 
-        console.log("[ReadingSettingsProvider] Raw Firestore data:", stored);
 
         // Filter out unknown/deprecated fields (e.g., overallScale)
         const filtered: Record<string, any> = {};
@@ -97,7 +96,6 @@ export function ReadingSettingsProvider({ children }: { children: React.ReactNod
             if (VALID_SETTING_KEYS.has(key)) {
               filtered[key] = stored[key as keyof typeof stored];
             } else {
-              console.log(`[ReadingSettingsProvider] Ignoring deprecated field: ${key}`);
             }
           }
         }
@@ -134,7 +132,6 @@ export function ReadingSettingsProvider({ children }: { children: React.ReactNod
           showWordByWordTransliteration: migratedShowTransliteration,
         };
 
-        console.log("[ReadingSettingsProvider] Normalized settings:", normalized);
         setSettings(normalized);
       } catch (error) {
         console.error("[ReadingSettingsProvider] Error loading settings:", error);

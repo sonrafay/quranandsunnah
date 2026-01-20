@@ -51,7 +51,7 @@ export async function getQfToken(force = false): Promise<string> {
 // Generic GET with headers and one automatic retry on invalid/expired token
 export async function qfGet<T>(
   path: string,
-  init?: { revalidate?: number; query?: Record<string, string> }
+  init?: { revalidate?: number; query?: Record<string, string>; cache?: RequestCache }
 ): Promise<T> {
   const base = qfApiBase();
   const url = new URL(`${base}${path}`);
@@ -59,12 +59,17 @@ export async function qfGet<T>(
 
   const attempt = async (forceToken = false) => {
     const token = await getQfToken(forceToken);
+    const next =
+      init?.cache === "no-store"
+        ? undefined
+        : { revalidate: init?.revalidate ?? 3600 };
     const res = await fetch(url.toString(), {
       headers: {
         "x-auth-token": token,
         "x-client-id": QF_CLIENT_ID(),
       },
-      next: { revalidate: init?.revalidate ?? 3600 },
+      cache: init?.cache,
+      next,
     });
     return res;
   };
