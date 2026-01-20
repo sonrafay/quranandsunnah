@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Bell, BellRing, Clock, CalendarDays, Check, ChevronDown, ChevronLeft } from "lucide-react";
+import { Bell, BellRing, Clock, CalendarDays, Check, ChevronDown, ChevronLeft, Sparkles } from "lucide-react";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "@/lib/firebase";
 
@@ -36,11 +36,19 @@ const OFFSET_OPTIONS = [
   { label: "5 min", value: 5 },
 ] as const;
 
+// Time options for daily dhikr reminder
+const DHIKR_TIME_OPTIONS = [
+  { label: "Morning", value: "morning" },
+  { label: "Evening", value: "evening" },
+] as const;
+
 type Draft = {
   webEnabled: boolean;
   prayerEnabled: boolean;
   prayerOffsets: number[]; // minutes before
   kahfEnabled: boolean;    // Friday Surah Al-Kahf reminder
+  dhikrEnabled: boolean;   // Daily dhikr reminder
+  dhikrTime: string;       // "morning" | "evening"
 };
 
 function toDraft(p?: NotificationPrefs | null): Draft {
@@ -49,6 +57,8 @@ function toDraft(p?: NotificationPrefs | null): Draft {
     prayerEnabled: !!p?.prayer?.enabled,
     prayerOffsets: p?.prayer?.offsets?.slice()?.sort((a,b)=>b-a) || [30, 10, 5],
     kahfEnabled: !!p?.kahf?.enabled,
+    dhikrEnabled: !!p?.dhikr?.enabled,
+    dhikrTime: p?.dhikr?.time || "evening",
   };
 }
 
@@ -78,7 +88,9 @@ export default function NotificationsPage() {
       cur.webEnabled !== draft.webEnabled ||
       cur.prayerEnabled !== draft.prayerEnabled ||
       JSON.stringify([...cur.prayerOffsets].sort()) !== JSON.stringify([...draft.prayerOffsets].sort()) ||
-      cur.kahfEnabled !== draft.kahfEnabled
+      cur.kahfEnabled !== draft.kahfEnabled ||
+      cur.dhikrEnabled !== draft.dhikrEnabled ||
+      cur.dhikrTime !== draft.dhikrTime
     );
   }, [prefs, draft]);
 
@@ -138,6 +150,10 @@ export default function NotificationsPage() {
         kahf: {
           enabled: draft.kahfEnabled,
         },
+        dhikr: {
+          enabled: draft.dhikrEnabled,
+          time: draft.dhikrTime,
+        },
       };
       await saveNotificationPrefs(user.uid, next);
       push({ title: "Notifications", body: "Preferences saved." });
@@ -150,7 +166,7 @@ export default function NotificationsPage() {
 
   async function sendServerTest() {
     try {
-      const fn = httpsCallable(getFunctions(app), "sendTestPush");
+      const fn = httpsCallable(getFunctions(app, "us-central1"), "sendTestPush");
       await fn();
       push({ title: "Notifications", body: "Test push sent." });
     } catch (err) {
@@ -289,7 +305,10 @@ export default function NotificationsPage() {
         </section>
 
         {/* Prayer Reminders */}
-        <section className="rounded-2xl glass-surface glass-readable p-5">
+        <section className={cn(
+          "rounded-2xl glass-surface glass-readable p-5 transition-opacity",
+          !draft.webEnabled && "opacity-50"
+        )}>
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="inline-grid h-10 w-10 place-items-center rounded-full glass-surface glass-sheet">
@@ -304,13 +323,14 @@ export default function NotificationsPage() {
             </div>
             <Switch
               checked={draft.prayerEnabled}
+              disabled={!draft.webEnabled}
               onCheckedChange={(v: boolean) =>
                 setDraft((d) => ({ ...d, prayerEnabled: v }))
               }
             />
           </div>
 
-          <div className={cn("mt-4 transition-opacity", !draft.prayerEnabled && "opacity-50 pointer-events-none")}>
+          <div className={cn("mt-4 transition-opacity", (!draft.prayerEnabled || !draft.webEnabled) && "opacity-50 pointer-events-none")}>
             <label className="text-sm font-medium">Reminder times</label>
             <div className="mt-2">
               <Popover open={openOffsets} onOpenChange={setOpenOffsets}>
@@ -353,7 +373,10 @@ export default function NotificationsPage() {
         </section>
 
         {/* Friday Surah Al-Kahf */}
-        <section className="rounded-2xl glass-surface glass-readable p-5">
+        <section className={cn(
+          "rounded-2xl glass-surface glass-readable p-5 transition-opacity",
+          !draft.webEnabled && "opacity-50"
+        )}>
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="inline-grid h-10 w-10 place-items-center rounded-full glass-surface glass-sheet">
@@ -368,10 +391,58 @@ export default function NotificationsPage() {
             </div>
             <Switch
               checked={draft.kahfEnabled}
+              disabled={!draft.webEnabled}
               onCheckedChange={(v: boolean) =>
                 setDraft((d) => ({ ...d, kahfEnabled: v }))
               }
             />
+          </div>
+        </section>
+
+        {/* Daily Dhikr Reminder */}
+        <section className={cn(
+          "rounded-2xl glass-surface glass-readable p-5 transition-opacity",
+          !draft.webEnabled && "opacity-50"
+        )}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="inline-grid h-10 w-10 place-items-center rounded-full glass-surface glass-sheet">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">Daily Dhikr Reminder</h2>
+                <p className="text-sm text-muted-foreground">
+                  Receive a gentle daily reminder for dhikr and remembrance of Allah.
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={draft.dhikrEnabled}
+              disabled={!draft.webEnabled}
+              onCheckedChange={(v: boolean) =>
+                setDraft((d) => ({ ...d, dhikrEnabled: v }))
+              }
+            />
+          </div>
+
+          <div className={cn("mt-4 transition-opacity", (!draft.dhikrEnabled || !draft.webEnabled) && "opacity-50 pointer-events-none")}>
+            <label className="text-sm font-medium">Reminder time</label>
+            <div className="mt-2 flex gap-2">
+              {DHIKR_TIME_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setDraft((d) => ({ ...d, dhikrTime: opt.value }))}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-sm font-medium transition-all",
+                    draft.dhikrTime === opt.value
+                      ? "bg-primary text-primary-foreground"
+                      : "glass-surface glass-sheet hover:brightness-[0.92] dark:hover:brightness-[0.85]"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
       </div>

@@ -23,6 +23,8 @@ type ReadingSettings = {
   wordByWordLanguageId: number | null;
   showWordByWordTranslation: boolean;
   showWordByWordTransliteration: boolean;
+  // Flag to indicate if settings have been loaded from Firebase
+  isLoaded: boolean;
 };
 
 function migrateLegacyFont(oldFont: any): QuranFontVariant {
@@ -63,6 +65,7 @@ const defaultSettings: ReadingSettings = {
   wordByWordLanguageId: null,
   showWordByWordTranslation: false,
   showWordByWordTransliteration: false,
+  isLoaded: false,
 };
 
 const ReadingSettingsContext = createContext<ReadingSettings>(defaultSettings);
@@ -77,7 +80,8 @@ export function ReadingSettingsProvider({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!user) {
-      setSettings(defaultSettings);
+      // For non-logged-in users, mark as loaded immediately with defaults
+      setSettings({ ...defaultSettings, isLoaded: true });
       return;
     }
 
@@ -130,12 +134,13 @@ export function ReadingSettingsProvider({ children }: { children: React.ReactNod
           wordByWordLanguageId: migratedLanguageId,
           showWordByWordTranslation: migratedShowTranslation,
           showWordByWordTransliteration: migratedShowTransliteration,
+          isLoaded: true,
         };
 
         setSettings(normalized);
       } catch (error) {
         console.error("[ReadingSettingsProvider] Error loading settings:", error);
-        if (active) setSettings(defaultSettings);
+        if (active) setSettings({ ...defaultSettings, isLoaded: true });
       }
     })();
 

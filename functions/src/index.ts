@@ -12,7 +12,7 @@ const db = getFirestore();
 
 /** ------------ sendTestPush (Gen 2 callable) ------------ */
 export const sendTestPush = onCall(
-  { region: "us-central1" },
+  { region: "us-central1", cors: [/localhost/, /quranandsunnah\.vercel\.app$/, /quranandsunnah.*\.vercel\.app$/] },
   async (req): Promise<{ ok: true }> => {
     if (!req.auth?.uid) {
       throw new HttpsError("unauthenticated", "Sign-in required");

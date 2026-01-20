@@ -1,12 +1,11 @@
 // src/components/notifications/ClientNotifications.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   NotificationPrefs,
   onNotificationPrefs,
-  saveNotificationPrefs,
   saveFcmToken,
   clearFcmToken,
 } from "@/lib/cloud";
@@ -18,22 +17,45 @@ export default function ClientNotifications() {
   const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
   const { push } = useToaster();
 
+  // Track if this is the initial load to avoid showing toast on app start
+  const isInitialLoad = useRef(true);
+  // Track the last webEnabled value we processed to avoid duplicate processing
+  const lastWebEnabled = useRef<boolean | undefined>(undefined);
+
   // Live prefs
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      // Reset tracking when user logs out
+      isInitialLoad.current = true;
+      lastWebEnabled.current = undefined;
+      return;
+    }
     const off = onNotificationPrefs(user.uid, (p) => setPrefs(p));
     return () => off?.();
   }, [user]);
 
   // Turn ON web push → request permission + get token → save to Firestore
+  // Only show toasts when user explicitly changes the setting, not on initial load
   useEffect(() => {
     (async () => {
       if (!user) return;
       if (!prefs) return;
 
-      if (prefs.webEnabled) {
+      const currentWebEnabled = !!prefs.webEnabled;
+
+      // Skip if the value hasn't actually changed from what we last processed
+      if (lastWebEnabled.current === currentWebEnabled) return;
+
+      const wasInitialLoad = isInitialLoad.current;
+      isInitialLoad.current = false;
+      lastWebEnabled.current = currentWebEnabled;
+
+      if (currentWebEnabled) {
         if (!("Notification" in window)) {
-          push({ title: "Notifications", body: "This browser does not support Web Notifications." });
+          // Only show error toasts - these are important for user feedback
+          if (!wasInitialLoad) {
+            push({ title: "Notifications", body: "This browser does not support Web Notifications." });
+          }
           await clearFcmToken(user.uid);
           return;
         }
@@ -44,7 +66,10 @@ export default function ClientNotifications() {
             : Notification.permission;
 
         if (permission !== "granted") {
-          push({ title: "Notifications", body: "Permission not granted — using in-app popouts instead." });
+          // Only show toast if user just enabled notifications (not initial load)
+          if (!wasInitialLoad) {
+            push({ title: "Notifications", body: "Permission not granted — using in-app popouts instead." });
+          }
           await clearFcmToken(user.uid);
           return;
         }
@@ -53,17 +78,20 @@ export default function ClientNotifications() {
         const token = await ensureFcmToken(vapid);
         if (token) {
           await saveFcmToken(user.uid, token);
-          push({ title: "Notifications", body: "Push enabled (Google/FCM token saved)." });
-        } else {
-          // More helpful guidance:
+          // Only show success toast when user explicitly enables notifications
+          // Skip toast on initial app load to avoid annoying messages
+          if (!wasInitialLoad) {
+            push({ title: "Notifications", body: "Push notifications enabled." });
+          }
+        } else if (!wasInitialLoad) {
+          // Only show error toast if user just tried to enable
           push({
             title: "Notifications",
-            body:
-              "Unable to get push token. Check: (1) HTTPS or localhost, (2) VAPID key set, (3) SW at /firebase-messaging-sw.js, (4) permission granted.",
+            body: "Unable to get push token. Check browser settings.",
           });
         }
       } else {
-        // Turned OFF → clear token
+        // Turned OFF → clear token (silent operation)
         await clearFcmToken(user.uid);
       }
     })();
