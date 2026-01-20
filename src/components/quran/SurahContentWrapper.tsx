@@ -2,7 +2,7 @@
 
 import { ReadingSettingsProvider, useReadingSettings } from "./ReadingSettingsProvider";
 import VerseDisplay from "./VerseDisplay";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { WORD_AUDIO_EVENTS } from "@/lib/wordAudio";
 import ScrollProgressBar from "@/components/ScrollProgressBar";
@@ -33,8 +33,44 @@ function SurahContentInner({
   const searchParams = useSearchParams();
   const [activeReciterWord, setActiveReciterWord] = useState<ActiveReciterWord>(null);
 
-  // Sync URL with settings to fetch correct translations/transliterations/word-by-word
+  // Track if URL has been synced to prevent repeated updates on navigation
+  // This prevents the reload-on-first-click issue
+  const hasSyncedUrl = useRef(false);
+  const lastSyncedSettings = useRef<string>("");
+  const lastChapter = useRef<number>(chapter);
+
+  // Reset sync tracking when chapter changes (new Surah navigation)
   useEffect(() => {
+    if (lastChapter.current !== chapter) {
+      hasSyncedUrl.current = false;
+      lastSyncedSettings.current = "";
+      lastChapter.current = chapter;
+    }
+  }, [chapter]);
+
+  // Sync URL with settings to fetch correct translations/transliterations/word-by-word
+  // Only syncs once per unique settings combination to avoid reload loops
+  // IMPORTANT: Wait for settings to be loaded before syncing to prevent reload on first navigation
+  useEffect(() => {
+    // Don't sync until settings are loaded from Firebase
+    // This prevents the reload-on-first-click issue
+    if (!settings.isLoaded) {
+      return;
+    }
+
+    // Create a unique key for current settings
+    const settingsKey = [
+      settings.translationIds.sort().join(","),
+      settings.transliterationIds.sort().join(","),
+      settings.wordByWordLanguageId,
+      settings.showWordByWordTranslation,
+    ].join("|");
+
+    // Skip if we already synced with these exact settings for this chapter
+    if (hasSyncedUrl.current && lastSyncedSettings.current === settingsKey) {
+      return;
+    }
+
     const currentTParam = searchParams.get("t");
     const currentTLParam = searchParams.get("tl");
     const currentWTParam = searchParams.get("wt");
@@ -58,6 +94,10 @@ function SurahContentInner({
       (settings.translationIds.length > 0 && currentT !== settingsT) ||
       currentTL !== settingsTL ||
       currentWT !== settingsWT;
+
+    // Mark as synced to prevent future updates for same settings
+    hasSyncedUrl.current = true;
+    lastSyncedSettings.current = settingsKey;
 
     if (needsUpdate && (settings.translationIds.length > 0 || settingsWT)) {
       const params = new URLSearchParams();
@@ -87,7 +127,7 @@ function SurahContentInner({
       // Update URL to trigger server refetch with correct IDs
       router.replace(`?${params.toString()}`);
     }
-  }, [settings.translationIds, settings.transliterationIds, settings.wordByWordLanguageId, settings.showWordByWordTranslation, searchParams, router]);
+  }, [settings.isLoaded, settings.translationIds, settings.transliterationIds, settings.wordByWordLanguageId, settings.showWordByWordTranslation, searchParams, router]);
 
   useEffect(() => {
     const handleHighlightStart = (e: Event) => {

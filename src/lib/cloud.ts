@@ -438,6 +438,7 @@ export type NotificationPrefs = {
   location?: { lat: number; lon: number; tz: string };  // saved from Prayer page
   prayer?: { enabled: boolean; offsets: number[] };     // minutes before prayer
   kahf?: { enabled: boolean };                  // Friday reminder
+  dhikr?: { enabled: boolean; time?: string };  // Daily dhikr reminder (time is optional, e.g. "evening", "morning", or custom)
   // (legacy fields may still exist; we just ignore them)
 };
 
