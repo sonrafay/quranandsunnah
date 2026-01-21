@@ -114,6 +114,7 @@ export default function FriendsPage() {
         setSearchError("No user found with that handle or ID.");
       }
     } catch (error) {
+      console.error("Search error:", error);
       setSearchError("Search failed. Please try again.");
     } finally {
       setSearching(false);
