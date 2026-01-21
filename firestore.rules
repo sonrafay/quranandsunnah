@@ -39,8 +39,10 @@ service cloud.firestore {
     // ---- App data under /users/{uid} ----
     match /users/{uid} {
 
-      // Allow reading/writing of the user root doc (profile fields)
-      allow read, write: if isOwner(uid);
+      // Allow reading public profile fields for friend search (any signed-in user)
+      // Allow full read/write for owner
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid);
 
       // Settings subcollection (includes prefs, notifications, etc.)
       match /settings/{docId} {
@@ -101,6 +103,23 @@ service cloud.firestore {
       // Notification subscription doc (token/prefs live here too)
       match /notifSubs/{subId} {
         allow read, write: if isOwner(uid) && subId == uid;
+      }
+
+      // Friends list - owner can read/write, friend can read their entry
+      match /friends/{friendUid} {
+        allow read: if isOwner(uid) || isOwner(friendUid);
+        allow write: if isOwner(uid) || isOwner(friendUid);
+      }
+
+      // Incoming friend requests - owner can read/delete, sender can create
+      match /friendRequestsIncoming/{fromUid} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(fromUid);
+      }
+
+      // Outgoing friend requests - owner can read/write/delete
+      match /friendRequestsOutgoing/{toUid} {
+        allow read, write, delete: if isOwner(uid);
       }
 
       // Catch-all for any other subcollections (must be last)

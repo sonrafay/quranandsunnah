@@ -494,52 +494,81 @@ export async function clearFcmToken(uid: string) {
 export async function searchUserByHandleOrId(
   searchQuery: string
 ): Promise<FriendProfile | null> {
-  const trimmed = searchQuery.trim().toLowerCase();
+  const trimmed = searchQuery.trim();
   if (!trimmed) return null;
 
-  // Try searching by handle first
-  const handleQ = query(
-    collection(db, "users"),
-    where("handle", "==", trimmed),
-    fsLimit(1)
-  );
-  const handleSnap = await getDocs(handleQ);
+  // Remove @ prefix if present (users might type @handle)
+  const cleanQuery = trimmed.startsWith("@") ? trimmed.slice(1) : trimmed;
 
-  if (!handleSnap.empty) {
-    const userDoc = handleSnap.docs[0];
-    const data = userDoc.data() as UserProfileDoc;
-    return {
-      uid: userDoc.id,
-      displayName: data.displayName || "User",
-      handle: data.handle,
-      publicId: data.publicId,
-      avatarIconId: data.avatarIconId,
-      avatarBorderTier: data.avatarBorderTier as AvatarBorderTier | undefined,
-    };
+  try {
+    // Try searching by handle first (exact match)
+    const handleQ = query(
+      collection(db, "users"),
+      where("handle", "==", cleanQuery),
+      fsLimit(1)
+    );
+    const handleSnap = await getDocs(handleQ);
+
+    if (!handleSnap.empty) {
+      const userDoc = handleSnap.docs[0];
+      const data = userDoc.data() as UserProfileDoc;
+      return {
+        uid: userDoc.id,
+        displayName: data.displayName || "User",
+        handle: data.handle,
+        publicId: data.publicId,
+        avatarIconId: data.avatarIconId,
+        avatarBorderTier: data.avatarBorderTier as AvatarBorderTier | undefined,
+      };
+    }
+
+    // Try searching by handle lowercase (in case stored lowercase)
+    const handleLowerQ = query(
+      collection(db, "users"),
+      where("handle", "==", cleanQuery.toLowerCase()),
+      fsLimit(1)
+    );
+    const handleLowerSnap = await getDocs(handleLowerQ);
+
+    if (!handleLowerSnap.empty) {
+      const userDoc = handleLowerSnap.docs[0];
+      const data = userDoc.data() as UserProfileDoc;
+      return {
+        uid: userDoc.id,
+        displayName: data.displayName || "User",
+        handle: data.handle,
+        publicId: data.publicId,
+        avatarIconId: data.avatarIconId,
+        avatarBorderTier: data.avatarBorderTier as AvatarBorderTier | undefined,
+      };
+    }
+
+    // Try searching by publicId
+    const idQ = query(
+      collection(db, "users"),
+      where("publicId", "==", cleanQuery),
+      fsLimit(1)
+    );
+    const idSnap = await getDocs(idQ);
+
+    if (!idSnap.empty) {
+      const userDoc = idSnap.docs[0];
+      const data = userDoc.data() as UserProfileDoc;
+      return {
+        uid: userDoc.id,
+        displayName: data.displayName || "User",
+        handle: data.handle,
+        publicId: data.publicId,
+        avatarIconId: data.avatarIconId,
+        avatarBorderTier: data.avatarBorderTier as AvatarBorderTier | undefined,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Search query error:", error);
+    throw error;
   }
-
-  // Try searching by publicId
-  const idQ = query(
-    collection(db, "users"),
-    where("publicId", "==", trimmed),
-    fsLimit(1)
-  );
-  const idSnap = await getDocs(idQ);
-
-  if (!idSnap.empty) {
-    const userDoc = idSnap.docs[0];
-    const data = userDoc.data() as UserProfileDoc;
-    return {
-      uid: userDoc.id,
-      displayName: data.displayName || "User",
-      handle: data.handle,
-      publicId: data.publicId,
-      avatarIconId: data.avatarIconId,
-      avatarBorderTier: data.avatarBorderTier as AvatarBorderTier | undefined,
-    };
-  }
-
-  return null;
 }
 
 // Send a friend request
