@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   User,
+  Users,
   Bookmark,
   StickyNote,
   Clock3,
@@ -79,6 +80,10 @@ export default function ProfileMenu({ iconOnlyBelow }: { iconOnlyBelow?: "sm" | 
           <DropdownMenuItem onSelect={() => goOrSignIn("/account")}>
             <User className="h-4 w-4 mr-2" />
             Account
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => goOrSignIn("/friends")}>
+            <Users className="h-4 w-4 mr-2" />
+            Friends
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => goOrSignIn("/bookmarks")}>
             <Bookmark className="h-4 w-4 mr-2" />

@@ -62,3 +62,32 @@ export type Connection = {
   online?: boolean;
   lastOnlineAt?: string;
 };
+
+// Friend system types
+export type FriendRequestStatus = "pending" | "accepted" | "declined";
+
+export type FriendRequest = {
+  id: string;
+  fromUid: string;
+  toUid: string;
+  status: FriendRequestStatus;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+export type FriendProfile = {
+  uid: string;
+  displayName: string;
+  handle?: string;
+  publicId?: string;
+  avatarIconId?: string;
+  avatarBorderTier?: AvatarBorderTier;
+  currentStreak?: number;
+  privacy?: PrivacySettings;
+};
+
+export type FriendRelationship = {
+  friendUid: string;
+  createdAt: string;
+  profile?: FriendProfile;
+};

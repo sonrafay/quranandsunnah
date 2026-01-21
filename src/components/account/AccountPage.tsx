@@ -5,11 +5,10 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import AvatarCustomizer from "@/components/account/AvatarCustomizer";
 import IdentityCard from "@/components/account/IdentityCard";
 import ProfileOverviewCard from "@/components/account/ProfileOverviewCard";
-import SocialCard from "@/components/account/SocialCard";
+import PrivacyCard from "@/components/account/PrivacyCard";
 import {
   Avatar,
   AvatarBorderTier,
-  Connection,
   PrivacySettings,
   Profile,
 } from "@/lib/account/models";
@@ -27,11 +26,6 @@ const ICON_LABELS: Record<string, string> = {
   book: "Open Book",
   shield: "Steadfast Shield",
 };
-
-const DEFAULT_CONNECTIONS: Connection[] = [
-  { id: "c1", handle: "umar", status: "accepted", createdAt: "2025-08-20", online: true },
-  { id: "c2", handle: "fatimah", status: "pending", createdAt: "2025-09-02", lastOnlineAt: "2h ago" },
-];
 
 function generatePublicId(): string {
   // TODO: replace with server-generated unique IDs.
@@ -68,7 +62,6 @@ export default function AccountPage() {
   });
   const [streak, setStreak] = useState({ currentStreak: 1, bestStreak: 1 });
   const [privacy, setPrivacy] = useState<PrivacySettings>(DEFAULT_PRIVACY);
-  const [connections] = useState<Connection[]>(DEFAULT_CONNECTIONS);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
   useEffect(() => {
@@ -212,8 +205,7 @@ export default function AccountPage() {
         onChange={handleAvatarChange}
       />
 
-      <SocialCard
-        connections={connections}
+      <PrivacyCard
         privacy={privacy}
         onPrivacyChange={handlePrivacyChange}
       />
