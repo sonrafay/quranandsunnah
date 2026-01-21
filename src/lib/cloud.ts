@@ -2,7 +2,7 @@
 "use client";
 
 import { db } from "@/lib/firebase";
-import type { PrivacySettings } from "@/lib/account/models";
+import type { PrivacySettings, FriendProfile, AvatarBorderTier } from "@/lib/account/models";
 import {
   doc, setDoc, serverTimestamp, collection, deleteDoc,
   onSnapshot, query, where, getDocs, orderBy, Timestamp,
@@ -484,4 +484,371 @@ export async function clearFcmToken(uid: string) {
     { fcmToken: deleteField(), fcmUpdatedAt: serverTimestamp() },
     { merge: true }
   );
+}
+
+/* =========================
+   Friends System
+   ========================= */
+
+// Search for a user by handle or publicId
+export async function searchUserByHandleOrId(
+  searchQuery: string
+): Promise<FriendProfile | null> {
+  const trimmed = searchQuery.trim().toLowerCase();
+  if (!trimmed) return null;
+
+  // Try searching by handle first
+  const handleQ = query(
+    collection(db, "users"),
+    where("handle", "==", trimmed),
+    fsLimit(1)
+  );
+  const handleSnap = await getDocs(handleQ);
+
+  if (!handleSnap.empty) {
+    const userDoc = handleSnap.docs[0];
+    const data = userDoc.data() as UserProfileDoc;
+    return {
+      uid: userDoc.id,
+      displayName: data.displayName || "User",
+      handle: data.handle,
+      publicId: data.publicId,
+      avatarIconId: data.avatarIconId,
+      avatarBorderTier: data.avatarBorderTier as AvatarBorderTier | undefined,
+    };
+  }
+
+  // Try searching by publicId
+  const idQ = query(
+    collection(db, "users"),
+    where("publicId", "==", trimmed),
+    fsLimit(1)
+  );
+  const idSnap = await getDocs(idQ);
+
+  if (!idSnap.empty) {
+    const userDoc = idSnap.docs[0];
+    const data = userDoc.data() as UserProfileDoc;
+    return {
+      uid: userDoc.id,
+      displayName: data.displayName || "User",
+      handle: data.handle,
+      publicId: data.publicId,
+      avatarIconId: data.avatarIconId,
+      avatarBorderTier: data.avatarBorderTier as AvatarBorderTier | undefined,
+    };
+  }
+
+  return null;
+}
+
+// Send a friend request
+export async function sendFriendRequest(
+  fromUid: string,
+  toUid: string
+): Promise<{ success: boolean; error?: string }> {
+  if (fromUid === toUid) {
+    return { success: false, error: "Cannot send friend request to yourself" };
+  }
+
+  // Check if already friends
+  const existingFriend = await getDoc(
+    doc(db, "users", fromUid, "friends", toUid)
+  );
+  if (existingFriend.exists()) {
+    return { success: false, error: "Already friends with this user" };
+  }
+
+  // Check if request already exists (either direction)
+  const existingOutgoing = await getDoc(
+    doc(db, "users", fromUid, "friendRequestsOutgoing", toUid)
+  );
+  if (existingOutgoing.exists()) {
+    return { success: false, error: "Friend request already sent" };
+  }
+
+  const existingIncoming = await getDoc(
+    doc(db, "users", fromUid, "friendRequestsIncoming", toUid)
+  );
+  if (existingIncoming.exists()) {
+    return { success: false, error: "This user has already sent you a request" };
+  }
+
+  const now = serverTimestamp();
+
+  // Add to sender's outgoing requests
+  await setDoc(doc(db, "users", fromUid, "friendRequestsOutgoing", toUid), {
+    toUid,
+    status: "pending",
+    createdAt: now,
+  });
+
+  // Add to recipient's incoming requests
+  await setDoc(doc(db, "users", toUid, "friendRequestsIncoming", fromUid), {
+    fromUid,
+    status: "pending",
+    createdAt: now,
+  });
+
+  return { success: true };
+}
+
+// Accept a friend request
+export async function acceptFriendRequest(
+  uid: string,
+  fromUid: string
+): Promise<{ success: boolean; error?: string }> {
+  const incomingRef = doc(db, "users", uid, "friendRequestsIncoming", fromUid);
+  const incomingSnap = await getDoc(incomingRef);
+
+  if (!incomingSnap.exists()) {
+    return { success: false, error: "Friend request not found" };
+  }
+
+  const now = serverTimestamp();
+
+  // Add to both users' friends lists
+  await setDoc(doc(db, "users", uid, "friends", fromUid), {
+    friendUid: fromUid,
+    createdAt: now,
+  });
+
+  await setDoc(doc(db, "users", fromUid, "friends", uid), {
+    friendUid: uid,
+    createdAt: now,
+  });
+
+  // Remove the request documents
+  await deleteDoc(incomingRef);
+  await deleteDoc(doc(db, "users", fromUid, "friendRequestsOutgoing", uid));
+
+  return { success: true };
+}
+
+// Decline a friend request
+export async function declineFriendRequest(
+  uid: string,
+  fromUid: string
+): Promise<{ success: boolean; error?: string }> {
+  const incomingRef = doc(db, "users", uid, "friendRequestsIncoming", fromUid);
+  const incomingSnap = await getDoc(incomingRef);
+
+  if (!incomingSnap.exists()) {
+    return { success: false, error: "Friend request not found" };
+  }
+
+  // Remove the request documents
+  await deleteDoc(incomingRef);
+  await deleteDoc(doc(db, "users", fromUid, "friendRequestsOutgoing", uid));
+
+  return { success: true };
+}
+
+// Cancel an outgoing friend request
+export async function cancelFriendRequest(
+  uid: string,
+  toUid: string
+): Promise<{ success: boolean; error?: string }> {
+  const outgoingRef = doc(db, "users", uid, "friendRequestsOutgoing", toUid);
+  const outgoingSnap = await getDoc(outgoingRef);
+
+  if (!outgoingSnap.exists()) {
+    return { success: false, error: "Friend request not found" };
+  }
+
+  // Remove the request documents
+  await deleteDoc(outgoingRef);
+  await deleteDoc(doc(db, "users", toUid, "friendRequestsIncoming", uid));
+
+  return { success: true };
+}
+
+// Remove a friend
+export async function removeFriend(
+  uid: string,
+  friendUid: string
+): Promise<{ success: boolean; error?: string }> {
+  const friendRef = doc(db, "users", uid, "friends", friendUid);
+  const friendSnap = await getDoc(friendRef);
+
+  if (!friendSnap.exists()) {
+    return { success: false, error: "Friend not found" };
+  }
+
+  // Remove from both users' friends lists
+  await deleteDoc(friendRef);
+  await deleteDoc(doc(db, "users", friendUid, "friends", uid));
+
+  return { success: true };
+}
+
+// Get incoming friend requests with profiles
+export async function getIncomingFriendRequests(
+  uid: string
+): Promise<Array<{ fromUid: string; createdAt: Timestamp; profile?: FriendProfile }>> {
+  const q = query(
+    collection(db, "users", uid, "friendRequestsIncoming"),
+    orderBy("createdAt", "desc")
+  );
+  const snap = await getDocs(q);
+
+  const requests: Array<{ fromUid: string; createdAt: Timestamp; profile?: FriendProfile }> = [];
+
+  for (const docSnap of snap.docs) {
+    const data = docSnap.data();
+    const fromUid = data.fromUid || docSnap.id;
+
+    // Fetch profile for each requester
+    const profileDoc = await getUserProfile(fromUid);
+    const profile: FriendProfile | undefined = profileDoc ? {
+      uid: fromUid,
+      displayName: profileDoc.displayName || "User",
+      handle: profileDoc.handle,
+      publicId: profileDoc.publicId,
+      avatarIconId: profileDoc.avatarIconId,
+      avatarBorderTier: profileDoc.avatarBorderTier as AvatarBorderTier | undefined,
+    } : undefined;
+
+    requests.push({
+      fromUid,
+      createdAt: data.createdAt,
+      profile,
+    });
+  }
+
+  return requests;
+}
+
+// Get outgoing friend requests with profiles
+export async function getOutgoingFriendRequests(
+  uid: string
+): Promise<Array<{ toUid: string; createdAt: Timestamp; profile?: FriendProfile }>> {
+  const q = query(
+    collection(db, "users", uid, "friendRequestsOutgoing"),
+    orderBy("createdAt", "desc")
+  );
+  const snap = await getDocs(q);
+
+  const requests: Array<{ toUid: string; createdAt: Timestamp; profile?: FriendProfile }> = [];
+
+  for (const docSnap of snap.docs) {
+    const data = docSnap.data();
+    const toUid = data.toUid || docSnap.id;
+
+    // Fetch profile for each recipient
+    const profileDoc = await getUserProfile(toUid);
+    const profile: FriendProfile | undefined = profileDoc ? {
+      uid: toUid,
+      displayName: profileDoc.displayName || "User",
+      handle: profileDoc.handle,
+      publicId: profileDoc.publicId,
+      avatarIconId: profileDoc.avatarIconId,
+      avatarBorderTier: profileDoc.avatarBorderTier as AvatarBorderTier | undefined,
+    } : undefined;
+
+    requests.push({
+      toUid,
+      createdAt: data.createdAt,
+      profile,
+    });
+  }
+
+  return requests;
+}
+
+// Get friends list with profiles
+export async function getFriendsList(
+  uid: string
+): Promise<FriendRelationship[]> {
+  const q = query(
+    collection(db, "users", uid, "friends"),
+    orderBy("createdAt", "desc")
+  );
+  const snap = await getDocs(q);
+
+  const friends: FriendRelationship[] = [];
+
+  for (const docSnap of snap.docs) {
+    const data = docSnap.data();
+    const friendUid = data.friendUid || docSnap.id;
+
+    // Fetch profile for each friend
+    const profileDoc = await getUserProfile(friendUid);
+    const profile: FriendProfile | undefined = profileDoc ? {
+      uid: friendUid,
+      displayName: profileDoc.displayName || "User",
+      handle: profileDoc.handle,
+      publicId: profileDoc.publicId,
+      avatarIconId: profileDoc.avatarIconId,
+      avatarBorderTier: profileDoc.avatarBorderTier as AvatarBorderTier | undefined,
+    } : undefined;
+
+    friends.push({
+      friendUid,
+      createdAt: data.createdAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
+      profile,
+    });
+  }
+
+  return friends;
+}
+
+// Get a specific user's public profile (for friend profile view)
+export async function getPublicProfile(uid: string): Promise<FriendProfile | null> {
+  const profileDoc = await getUserProfile(uid);
+  if (!profileDoc) return null;
+
+  // Get streak if privacy allows
+  let currentStreak: number | undefined;
+  if (profileDoc.privacy?.shareStreak) {
+    const streakDoc = await getStreak(uid);
+    currentStreak = streakDoc?.currentStreak;
+  }
+
+  return {
+    uid,
+    displayName: profileDoc.displayName || "User",
+    handle: profileDoc.handle,
+    publicId: profileDoc.publicId,
+    avatarIconId: profileDoc.avatarIconId,
+    avatarBorderTier: profileDoc.avatarBorderTier as AvatarBorderTier | undefined,
+    currentStreak,
+    privacy: profileDoc.privacy,
+  };
+}
+
+// Listen to incoming friend requests (real-time)
+export function onIncomingFriendRequests(
+  uid: string,
+  cb: (requests: Array<{ fromUid: string; createdAt: Timestamp }>) => void
+) {
+  const q = query(
+    collection(db, "users", uid, "friendRequestsIncoming"),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snap) => {
+    const requests = snap.docs.map((d) => ({
+      fromUid: d.data().fromUid || d.id,
+      createdAt: d.data().createdAt,
+    }));
+    cb(requests);
+  });
+}
+
+// Listen to friends list (real-time)
+export function onFriendsList(
+  uid: string,
+  cb: (friends: Array<{ friendUid: string; createdAt: Timestamp }>) => void
+) {
+  const q = query(
+    collection(db, "users", uid, "friends"),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snap) => {
+    const friends = snap.docs.map((d) => ({
+      friendUid: d.data().friendUid || d.id,
+      createdAt: d.data().createdAt,
+    }));
+    cb(friends);
+  });
 }
