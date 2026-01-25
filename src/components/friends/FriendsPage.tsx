@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,10 @@ import {
   acceptFriendRequest,
   declineFriendRequest,
   cancelFriendRequest,
-  getIncomingFriendRequests,
-  getOutgoingFriendRequests,
-  getFriendsList,
+  onIncomingFriendRequests,
+  onOutgoingFriendRequests,
+  onFriendsList,
+  fetchUserProfile,
 } from "@/lib/cloud";
 import {
   UserPlus,
@@ -65,7 +66,22 @@ export default function FriendsPage() {
 
   const [processingRequests, setProcessingRequests] = useState<Set<string>>(new Set());
 
-  // Load data
+  // Cache for profiles to avoid refetching
+  const profileCache = useRef<Map<string, FriendProfile>>(new Map());
+
+  // Helper to fetch and cache profile
+  const getProfile = useCallback(async (uid: string): Promise<FriendProfile | undefined> => {
+    if (profileCache.current.has(uid)) {
+      return profileCache.current.get(uid);
+    }
+    const profile = await fetchUserProfile(uid);
+    if (profile) {
+      profileCache.current.set(uid, profile);
+    }
+    return profile;
+  }, []);
+
+  // Real-time subscriptions
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -73,26 +89,64 @@ export default function FriendsPage() {
       return;
     }
 
-    async function loadData() {
-      setLoadingData(true);
-      try {
-        const [incoming, outgoing, friendsList] = await Promise.all([
-          getIncomingFriendRequests(user!.uid),
-          getOutgoingFriendRequests(user!.uid),
-          getFriendsList(user!.uid),
-        ]);
-        setIncomingRequests(incoming);
-        setOutgoingRequests(outgoing);
-        setFriends(friendsList);
-      } catch (error) {
-        console.error("Failed to load friends data:", error);
-      } finally {
+    setLoadingData(true);
+    let initialLoadComplete = 0;
+    const totalSubscriptions = 3;
+
+    const checkInitialLoad = () => {
+      initialLoadComplete++;
+      if (initialLoadComplete >= totalSubscriptions) {
         setLoadingData(false);
       }
-    }
+    };
 
-    loadData();
-  }, [user, authLoading]);
+    // Subscribe to incoming friend requests
+    const unsubIncoming = onIncomingFriendRequests(user.uid, async (requests) => {
+      // Fetch profiles for each request
+      const withProfiles = await Promise.all(
+        requests.map(async (req) => ({
+          ...req,
+          profile: await getProfile(req.fromUid),
+        }))
+      );
+      setIncomingRequests(withProfiles);
+      checkInitialLoad();
+    });
+
+    // Subscribe to outgoing friend requests
+    const unsubOutgoing = onOutgoingFriendRequests(user.uid, async (requests) => {
+      // Fetch profiles for each request
+      const withProfiles = await Promise.all(
+        requests.map(async (req) => ({
+          ...req,
+          profile: await getProfile(req.toUid),
+        }))
+      );
+      setOutgoingRequests(withProfiles);
+      checkInitialLoad();
+    });
+
+    // Subscribe to friends list
+    const unsubFriends = onFriendsList(user.uid, async (friendsData) => {
+      // Fetch profiles for each friend
+      const withProfiles: FriendRelationship[] = await Promise.all(
+        friendsData.map(async (f) => ({
+          friendUid: f.friendUid,
+          createdAt: f.createdAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
+          profile: await getProfile(f.friendUid),
+        }))
+      );
+      setFriends(withProfiles);
+      checkInitialLoad();
+    });
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      unsubIncoming();
+      unsubOutgoing();
+      unsubFriends();
+    };
+  }, [user, authLoading, getProfile]);
 
   // Search handler
   async function handleSearch() {
@@ -109,6 +163,8 @@ export default function FriendsPage() {
           setSearchError("That's you! Try searching for someone else.");
         } else {
           setSearchResult(result);
+          // Cache the profile
+          profileCache.current.set(result.uid, result);
         }
       } else {
         setSearchError("No user found with that handle or ID.");
@@ -121,46 +177,72 @@ export default function FriendsPage() {
     }
   }
 
-  // Send friend request
+  // Send friend request with optimistic UI
   async function handleSendRequest() {
     if (!user || !searchResult) return;
     setSendingRequest(true);
 
+    // Optimistic: add to outgoing requests immediately
+    const optimisticRequest: OutgoingRequest = {
+      toUid: searchResult.uid,
+      createdAt: Timestamp.now(),
+      profile: searchResult,
+    };
+    setOutgoingRequests((prev) => [optimisticRequest, ...prev]);
+    setSearchResult(null);
+    setSearchQuery("");
+
     try {
       const result = await sendFriendRequest(user.uid, searchResult.uid);
-      if (result.success) {
-        // Refresh outgoing requests
-        const outgoing = await getOutgoingFriendRequests(user.uid);
-        setOutgoingRequests(outgoing);
-        setSearchResult(null);
-        setSearchQuery("");
-      } else {
+      if (!result.success) {
+        // Rollback optimistic update
+        setOutgoingRequests((prev) => prev.filter((r) => r.toUid !== optimisticRequest.toUid));
         setSearchError(result.error || "Failed to send request.");
       }
     } catch (error) {
+      // Rollback optimistic update
+      setOutgoingRequests((prev) => prev.filter((r) => r.toUid !== optimisticRequest.toUid));
       setSearchError("Failed to send request. Please try again.");
     } finally {
       setSendingRequest(false);
     }
   }
 
-  // Accept friend request
+  // Accept friend request with optimistic UI
   async function handleAccept(fromUid: string) {
     if (!user) return;
     setProcessingRequests((prev) => new Set(prev).add(fromUid));
 
+    // Find the request being accepted
+    const acceptedRequest = incomingRequests.find((r) => r.fromUid === fromUid);
+
+    // Optimistic: remove from incoming, add to friends
+    setIncomingRequests((prev) => prev.filter((r) => r.fromUid !== fromUid));
+    if (acceptedRequest?.profile) {
+      const newFriend: FriendRelationship = {
+        friendUid: fromUid,
+        createdAt: new Date().toISOString(),
+        profile: acceptedRequest.profile,
+      };
+      setFriends((prev) => [newFriend, ...prev]);
+    }
+
     try {
       const result = await acceptFriendRequest(user.uid, fromUid);
-      if (result.success) {
-        // Refresh data
-        const [incoming, friendsList] = await Promise.all([
-          getIncomingFriendRequests(user.uid),
-          getFriendsList(user.uid),
-        ]);
-        setIncomingRequests(incoming);
-        setFriends(friendsList);
+      if (!result.success) {
+        // Rollback: restore incoming request, remove from friends
+        if (acceptedRequest) {
+          setIncomingRequests((prev) => [acceptedRequest, ...prev]);
+        }
+        setFriends((prev) => prev.filter((f) => f.friendUid !== fromUid));
+        console.error("Failed to accept request:", result.error);
       }
     } catch (error) {
+      // Rollback
+      if (acceptedRequest) {
+        setIncomingRequests((prev) => [acceptedRequest, ...prev]);
+      }
+      setFriends((prev) => prev.filter((f) => f.friendUid !== fromUid));
       console.error("Failed to accept request:", error);
     } finally {
       setProcessingRequests((prev) => {
@@ -171,18 +253,31 @@ export default function FriendsPage() {
     }
   }
 
-  // Decline friend request
+  // Decline friend request with optimistic UI
   async function handleDecline(fromUid: string) {
     if (!user) return;
     setProcessingRequests((prev) => new Set(prev).add(fromUid));
 
+    // Find the request being declined
+    const declinedRequest = incomingRequests.find((r) => r.fromUid === fromUid);
+
+    // Optimistic: remove from incoming
+    setIncomingRequests((prev) => prev.filter((r) => r.fromUid !== fromUid));
+
     try {
       const result = await declineFriendRequest(user.uid, fromUid);
-      if (result.success) {
-        const incoming = await getIncomingFriendRequests(user.uid);
-        setIncomingRequests(incoming);
+      if (!result.success) {
+        // Rollback
+        if (declinedRequest) {
+          setIncomingRequests((prev) => [declinedRequest, ...prev]);
+        }
+        console.error("Failed to decline request:", result.error);
       }
     } catch (error) {
+      // Rollback
+      if (declinedRequest) {
+        setIncomingRequests((prev) => [declinedRequest, ...prev]);
+      }
       console.error("Failed to decline request:", error);
     } finally {
       setProcessingRequests((prev) => {
@@ -193,18 +288,31 @@ export default function FriendsPage() {
     }
   }
 
-  // Cancel outgoing request
+  // Cancel outgoing request with optimistic UI
   async function handleCancel(toUid: string) {
     if (!user) return;
     setProcessingRequests((prev) => new Set(prev).add(toUid));
 
+    // Find the request being canceled
+    const canceledRequest = outgoingRequests.find((r) => r.toUid === toUid);
+
+    // Optimistic: remove from outgoing
+    setOutgoingRequests((prev) => prev.filter((r) => r.toUid !== toUid));
+
     try {
       const result = await cancelFriendRequest(user.uid, toUid);
-      if (result.success) {
-        const outgoing = await getOutgoingFriendRequests(user.uid);
-        setOutgoingRequests(outgoing);
+      if (!result.success) {
+        // Rollback
+        if (canceledRequest) {
+          setOutgoingRequests((prev) => [canceledRequest, ...prev]);
+        }
+        console.error("Failed to cancel request:", result.error);
       }
     } catch (error) {
+      // Rollback
+      if (canceledRequest) {
+        setOutgoingRequests((prev) => [canceledRequest, ...prev]);
+      }
       console.error("Failed to cancel request:", error);
     } finally {
       setProcessingRequests((prev) => {

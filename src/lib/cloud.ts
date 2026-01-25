@@ -2,7 +2,7 @@
 "use client";
 
 import { db } from "@/lib/firebase";
-import type { PrivacySettings, FriendProfile, AvatarBorderTier } from "@/lib/account/models";
+import type { PrivacySettings, FriendProfile, FriendRelationship, AvatarBorderTier } from "@/lib/account/models";
 import {
   doc, setDoc, serverTimestamp, collection, deleteDoc,
   onSnapshot, query, where, getDocs, orderBy, Timestamp,
@@ -880,4 +880,36 @@ export function onFriendsList(
     }));
     cb(friends);
   });
+}
+
+// Listen to outgoing friend requests (real-time)
+export function onOutgoingFriendRequests(
+  uid: string,
+  cb: (requests: Array<{ toUid: string; createdAt: Timestamp }>) => void
+) {
+  const q = query(
+    collection(db, "users", uid, "friendRequestsOutgoing"),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snap) => {
+    const requests = snap.docs.map((d) => ({
+      toUid: d.data().toUid || d.id,
+      createdAt: d.data().createdAt,
+    }));
+    cb(requests);
+  });
+}
+
+// Fetch profile for a user (helper for real-time listeners)
+export async function fetchUserProfile(uid: string): Promise<FriendProfile | undefined> {
+  const profileDoc = await getUserProfile(uid);
+  if (!profileDoc) return undefined;
+  return {
+    uid,
+    displayName: profileDoc.displayName || "User",
+    handle: profileDoc.handle,
+    publicId: profileDoc.publicId,
+    avatarIconId: profileDoc.avatarIconId,
+    avatarBorderTier: profileDoc.avatarBorderTier as AvatarBorderTier | undefined,
+  };
 }
