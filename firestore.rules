@@ -111,10 +111,10 @@ service cloud.firestore {
         allow write: if isOwner(uid) || isOwner(friendUid);
       }
 
-      // Incoming friend requests - owner can read/delete, sender can create
+      // Incoming friend requests - owner can read/delete, sender can create/delete
       match /friendRequestsIncoming/{fromUid} {
-        allow read, delete: if isOwner(uid);
-        allow create: if isOwner(fromUid);
+        allow read: if isOwner(uid);
+        allow create, delete: if isOwner(uid) || isOwner(fromUid);
       }
 
       // Outgoing friend requests - owner can read/write/delete

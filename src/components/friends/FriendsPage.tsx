@@ -66,6 +66,9 @@ export default function FriendsPage() {
 
   const [processingRequests, setProcessingRequests] = useState<Set<string>>(new Set());
 
+  // Track items being optimistically removed (to prevent real-time listener from re-adding them)
+  const pendingRemovals = useRef<Set<string>>(new Set());
+
   // Cache for profiles to avoid refetching
   const profileCache = useRef<Map<string, FriendProfile>>(new Map());
 
@@ -102,9 +105,11 @@ export default function FriendsPage() {
 
     // Subscribe to incoming friend requests
     const unsubIncoming = onIncomingFriendRequests(user.uid, async (requests) => {
+      // Filter out pending removals
+      const filtered = requests.filter((req) => !pendingRemovals.current.has(`incoming-${req.fromUid}`));
       // Fetch profiles for each request
       const withProfiles = await Promise.all(
-        requests.map(async (req) => ({
+        filtered.map(async (req) => ({
           ...req,
           profile: await getProfile(req.fromUid),
         }))
@@ -115,9 +120,11 @@ export default function FriendsPage() {
 
     // Subscribe to outgoing friend requests
     const unsubOutgoing = onOutgoingFriendRequests(user.uid, async (requests) => {
+      // Filter out pending removals
+      const filtered = requests.filter((req) => !pendingRemovals.current.has(`outgoing-${req.toUid}`));
       // Fetch profiles for each request
       const withProfiles = await Promise.all(
-        requests.map(async (req) => ({
+        filtered.map(async (req) => ({
           ...req,
           profile: await getProfile(req.toUid),
         }))
@@ -128,9 +135,11 @@ export default function FriendsPage() {
 
     // Subscribe to friends list
     const unsubFriends = onFriendsList(user.uid, async (friendsData) => {
+      // Filter out pending removals
+      const filtered = friendsData.filter((f) => !pendingRemovals.current.has(`friend-${f.friendUid}`));
       // Fetch profiles for each friend
       const withProfiles: FriendRelationship[] = await Promise.all(
-        friendsData.map(async (f) => ({
+        filtered.map(async (f) => ({
           friendUid: f.friendUid,
           createdAt: f.createdAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
           profile: await getProfile(f.friendUid),
@@ -216,6 +225,9 @@ export default function FriendsPage() {
     // Find the request being accepted
     const acceptedRequest = incomingRequests.find((r) => r.fromUid === fromUid);
 
+    // Mark as pending removal to prevent real-time listener from re-adding
+    pendingRemovals.current.add(`incoming-${fromUid}`);
+
     // Optimistic: remove from incoming, add to friends
     setIncomingRequests((prev) => prev.filter((r) => r.fromUid !== fromUid));
     if (acceptedRequest?.profile) {
@@ -231,14 +243,19 @@ export default function FriendsPage() {
       const result = await acceptFriendRequest(user.uid, fromUid);
       if (!result.success) {
         // Rollback: restore incoming request, remove from friends
+        pendingRemovals.current.delete(`incoming-${fromUid}`);
         if (acceptedRequest) {
           setIncomingRequests((prev) => [acceptedRequest, ...prev]);
         }
         setFriends((prev) => prev.filter((f) => f.friendUid !== fromUid));
         console.error("Failed to accept request:", result.error);
+      } else {
+        // Success - clear pending removal after a short delay to let Firestore sync
+        setTimeout(() => pendingRemovals.current.delete(`incoming-${fromUid}`), 2000);
       }
     } catch (error) {
       // Rollback
+      pendingRemovals.current.delete(`incoming-${fromUid}`);
       if (acceptedRequest) {
         setIncomingRequests((prev) => [acceptedRequest, ...prev]);
       }
@@ -261,6 +278,9 @@ export default function FriendsPage() {
     // Find the request being declined
     const declinedRequest = incomingRequests.find((r) => r.fromUid === fromUid);
 
+    // Mark as pending removal to prevent real-time listener from re-adding
+    pendingRemovals.current.add(`incoming-${fromUid}`);
+
     // Optimistic: remove from incoming
     setIncomingRequests((prev) => prev.filter((r) => r.fromUid !== fromUid));
 
@@ -268,13 +288,18 @@ export default function FriendsPage() {
       const result = await declineFriendRequest(user.uid, fromUid);
       if (!result.success) {
         // Rollback
+        pendingRemovals.current.delete(`incoming-${fromUid}`);
         if (declinedRequest) {
           setIncomingRequests((prev) => [declinedRequest, ...prev]);
         }
         console.error("Failed to decline request:", result.error);
+      } else {
+        // Success - clear pending removal after a short delay
+        setTimeout(() => pendingRemovals.current.delete(`incoming-${fromUid}`), 2000);
       }
     } catch (error) {
       // Rollback
+      pendingRemovals.current.delete(`incoming-${fromUid}`);
       if (declinedRequest) {
         setIncomingRequests((prev) => [declinedRequest, ...prev]);
       }
@@ -296,6 +321,9 @@ export default function FriendsPage() {
     // Find the request being canceled
     const canceledRequest = outgoingRequests.find((r) => r.toUid === toUid);
 
+    // Mark as pending removal to prevent real-time listener from re-adding
+    pendingRemovals.current.add(`outgoing-${toUid}`);
+
     // Optimistic: remove from outgoing
     setOutgoingRequests((prev) => prev.filter((r) => r.toUid !== toUid));
 
@@ -303,13 +331,18 @@ export default function FriendsPage() {
       const result = await cancelFriendRequest(user.uid, toUid);
       if (!result.success) {
         // Rollback
+        pendingRemovals.current.delete(`outgoing-${toUid}`);
         if (canceledRequest) {
           setOutgoingRequests((prev) => [canceledRequest, ...prev]);
         }
         console.error("Failed to cancel request:", result.error);
+      } else {
+        // Success - clear pending removal after a short delay
+        setTimeout(() => pendingRemovals.current.delete(`outgoing-${toUid}`), 2000);
       }
     } catch (error) {
       // Rollback
+      pendingRemovals.current.delete(`outgoing-${toUid}`);
       if (canceledRequest) {
         setOutgoingRequests((prev) => [canceledRequest, ...prev]);
       }
