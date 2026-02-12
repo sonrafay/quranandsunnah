@@ -6,7 +6,8 @@ import type { PrivacySettings, FriendProfile, FriendRelationship, AvatarBorderTi
 import {
   doc, setDoc, serverTimestamp, collection, deleteDoc,
   onSnapshot, query, where, getDocs, orderBy, Timestamp,
-  getDoc, updateDoc, deleteField, arrayUnion, arrayRemove, limit as fsLimit
+  getDoc, updateDoc, deleteField, arrayUnion, arrayRemove, limit as fsLimit,
+  writeBatch
 } from "firebase/firestore";
 
 import {
@@ -622,7 +623,7 @@ export async function sendFriendRequest(
   return { success: true };
 }
 
-// Accept a friend request
+// Accept a friend request (atomic batch write)
 export async function acceptFriendRequest(
   uid: string,
   fromUid: string
@@ -635,21 +636,27 @@ export async function acceptFriendRequest(
   }
 
   const now = serverTimestamp();
+  const batch = writeBatch(db);
 
-  // Add to both users' friends lists
-  await setDoc(doc(db, "users", uid, "friends", fromUid), {
+  // 1. Add to current user's friends list
+  batch.set(doc(db, "users", uid, "friends", fromUid), {
     friendUid: fromUid,
     createdAt: now,
   });
 
-  await setDoc(doc(db, "users", fromUid, "friends", uid), {
+  // 2. Add to requester's friends list
+  batch.set(doc(db, "users", fromUid, "friends", uid), {
     friendUid: uid,
     createdAt: now,
   });
 
-  // Remove the request documents
-  await deleteDoc(incomingRef);
-  await deleteDoc(doc(db, "users", fromUid, "friendRequestsOutgoing", uid));
+  // 3. Remove from current user's incoming requests
+  batch.delete(incomingRef);
+
+  // 4. Remove from requester's outgoing requests
+  batch.delete(doc(db, "users", fromUid, "friendRequestsOutgoing", uid));
+
+  await batch.commit();
 
   return { success: true };
 }

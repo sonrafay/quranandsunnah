@@ -73,7 +73,8 @@ export function Navigation() {
     pathname.startsWith("/notes") ||
     pathname.startsWith("/notifications") ||
     pathname.startsWith("/signin") ||
-    pathname.startsWith("/recent");
+    pathname.startsWith("/recent") ||
+    pathname.startsWith("/friends");
 
   const links = isApp ? appLinks : landingLinks;
   const hidden = useHideOnScroll();

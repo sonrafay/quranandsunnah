@@ -105,21 +105,33 @@ service cloud.firestore {
         allow read, write: if isOwner(uid) && subId == uid;
       }
 
-      // Friends list - owner can read/write, friend can read their entry
+      // Friends list
+      // - owner can read/write/delete their own friends
+      // - the friend (friendUid) can ADD themselves (when accepting a request)
+      //   and DELETE themselves (when unfriending)
       match /friends/{friendUid} {
         allow read: if isOwner(uid) || isOwner(friendUid);
-        allow write: if isOwner(uid) || isOwner(friendUid);
+        allow create: if isOwner(uid) || isOwner(friendUid);
+        allow update: if isOwner(uid);
+        allow delete: if isOwner(uid) || isOwner(friendUid);
       }
 
-      // Incoming friend requests - owner can read/delete, sender can create/delete
+      // Incoming friend requests
+      // - owner can read and delete (decline)
+      // - sender (fromUid) can create (send request) and delete (cancel)
       match /friendRequestsIncoming/{fromUid} {
         allow read: if isOwner(uid);
-        allow create, delete: if isOwner(uid) || isOwner(fromUid);
+        allow create: if isOwner(fromUid);
+        allow delete: if isOwner(uid) || isOwner(fromUid);
       }
 
-      // Outgoing friend requests - owner can read/write/delete
+      // Outgoing friend requests
+      // - owner can read, create, and delete
+      // - recipient (toUid) can delete (when accepting/declining)
       match /friendRequestsOutgoing/{toUid} {
-        allow read, write, delete: if isOwner(uid);
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid);
+        allow delete: if isOwner(uid) || isOwner(toUid);
       }
 
       // Catch-all for any other subcollections (must be last)

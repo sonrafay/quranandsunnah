@@ -33,7 +33,9 @@ import {
   Bell,
   Trophy,
   Loader2,
+  ChevronLeft,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Timestamp } from "firebase/firestore";
 
 type IncomingRequest = {
@@ -66,7 +68,11 @@ export default function FriendsPage() {
 
   const [processingRequests, setProcessingRequests] = useState<Set<string>>(new Set());
 
-  // Track items being optimistically removed (to prevent real-time listener from re-adding them)
+  // Track UIDs that have been successfully accepted - filter these from incoming requests
+  // even if the real-time listener hasn't caught up yet
+  const [acceptedUids, setAcceptedUids] = useState<Set<string>>(new Set());
+
+  // Track items being removed (to prevent real-time listener from re-adding during async ops)
   const pendingRemovals = useRef<Set<string>>(new Set());
 
   // Cache for profiles to avoid refetching
@@ -105,7 +111,7 @@ export default function FriendsPage() {
 
     // Subscribe to incoming friend requests
     const unsubIncoming = onIncomingFriendRequests(user.uid, async (requests) => {
-      // Filter out pending removals
+      // Filter out pending removals (check before fetching profiles)
       const filtered = requests.filter((req) => !pendingRemovals.current.has(`incoming-${req.fromUid}`));
       // Fetch profiles for each request
       const withProfiles = await Promise.all(
@@ -114,13 +120,15 @@ export default function FriendsPage() {
           profile: await getProfile(req.fromUid),
         }))
       );
-      setIncomingRequests(withProfiles);
+      // Filter again AFTER async operations in case user acted during fetch
+      const finalFiltered = withProfiles.filter((req) => !pendingRemovals.current.has(`incoming-${req.fromUid}`));
+      setIncomingRequests(finalFiltered);
       checkInitialLoad();
     });
 
     // Subscribe to outgoing friend requests
     const unsubOutgoing = onOutgoingFriendRequests(user.uid, async (requests) => {
-      // Filter out pending removals
+      // Filter out pending removals (check before fetching profiles)
       const filtered = requests.filter((req) => !pendingRemovals.current.has(`outgoing-${req.toUid}`));
       // Fetch profiles for each request
       const withProfiles = await Promise.all(
@@ -129,13 +137,15 @@ export default function FriendsPage() {
           profile: await getProfile(req.toUid),
         }))
       );
-      setOutgoingRequests(withProfiles);
+      // Filter again AFTER async operations in case user acted during fetch
+      const finalFiltered = withProfiles.filter((req) => !pendingRemovals.current.has(`outgoing-${req.toUid}`));
+      setOutgoingRequests(finalFiltered);
       checkInitialLoad();
     });
 
     // Subscribe to friends list
     const unsubFriends = onFriendsList(user.uid, async (friendsData) => {
-      // Filter out pending removals
+      // Filter out pending removals (check before fetching profiles)
       const filtered = friendsData.filter((f) => !pendingRemovals.current.has(`friend-${f.friendUid}`));
       // Fetch profiles for each friend
       const withProfiles: FriendRelationship[] = await Promise.all(
@@ -145,7 +155,9 @@ export default function FriendsPage() {
           profile: await getProfile(f.friendUid),
         }))
       );
-      setFriends(withProfiles);
+      // Filter again AFTER async operations in case user acted during fetch
+      const finalFiltered = withProfiles.filter((f) => !pendingRemovals.current.has(`friend-${f.friendUid}`));
+      setFriends(finalFiltered);
       checkInitialLoad();
     });
 
@@ -208,7 +220,7 @@ export default function FriendsPage() {
         setOutgoingRequests((prev) => prev.filter((r) => r.toUid !== optimisticRequest.toUid));
         setSearchError(result.error || "Failed to send request.");
       }
-    } catch (error) {
+    } catch {
       // Rollback optimistic update
       setOutgoingRequests((prev) => prev.filter((r) => r.toUid !== optimisticRequest.toUid));
       setSearchError("Failed to send request. Please try again.");
@@ -217,49 +229,28 @@ export default function FriendsPage() {
     }
   }
 
-  // Accept friend request with optimistic UI
+  // Accept friend request — non-optimistic: wait for batch to succeed,
+  // then mark as accepted so the listener-driven UI hides it immediately.
   async function handleAccept(fromUid: string) {
     if (!user) return;
+
+    // Disable the button while processing
     setProcessingRequests((prev) => new Set(prev).add(fromUid));
-
-    // Find the request being accepted
-    const acceptedRequest = incomingRequests.find((r) => r.fromUid === fromUid);
-
-    // Mark as pending removal to prevent real-time listener from re-adding
-    pendingRemovals.current.add(`incoming-${fromUid}`);
-
-    // Optimistic: remove from incoming, add to friends
-    setIncomingRequests((prev) => prev.filter((r) => r.fromUid !== fromUid));
-    if (acceptedRequest?.profile) {
-      const newFriend: FriendRelationship = {
-        friendUid: fromUid,
-        createdAt: new Date().toISOString(),
-        profile: acceptedRequest.profile,
-      };
-      setFriends((prev) => [newFriend, ...prev]);
-    }
 
     try {
       const result = await acceptFriendRequest(user.uid, fromUid);
       if (!result.success) {
-        // Rollback: restore incoming request, remove from friends
-        pendingRemovals.current.delete(`incoming-${fromUid}`);
-        if (acceptedRequest) {
-          setIncomingRequests((prev) => [acceptedRequest, ...prev]);
-        }
-        setFriends((prev) => prev.filter((f) => f.friendUid !== fromUid));
         console.error("Failed to accept request:", result.error);
       } else {
-        // Success - clear pending removal after a short delay to let Firestore sync
-        setTimeout(() => pendingRemovals.current.delete(`incoming-${fromUid}`), 2000);
+        // Batch succeeded — mark as accepted so the UI filters it out
+        // immediately, even before the onSnapshot listener fires
+        setAcceptedUids((prev) => new Set(prev).add(fromUid));
+        pendingRemovals.current.add(`incoming-${fromUid}`);
+        // Clear the pending removal flag after listeners have had time to sync
+        setTimeout(() => pendingRemovals.current.delete(`incoming-${fromUid}`), 3000);
       }
     } catch (error) {
-      // Rollback
-      pendingRemovals.current.delete(`incoming-${fromUid}`);
-      if (acceptedRequest) {
-        setIncomingRequests((prev) => [acceptedRequest, ...prev]);
-      }
-      setFriends((prev) => prev.filter((f) => f.friendUid !== fromUid));
+      // Batch failed — no UI was changed, nothing to rollback
       console.error("Failed to accept request:", error);
     } finally {
       setProcessingRequests((prev) => {
@@ -376,6 +367,13 @@ export default function FriendsPage() {
     return incomingRequests.some((r) => r.fromUid === uid);
   }
 
+  // Filter out accepted requests from the display list
+  // This is the key fix: even if Firestore listeners send stale data,
+  // requests we've accepted will never show in the UI
+  const displayIncomingRequests = incomingRequests.filter(
+    (r) => !acceptedUids.has(r.fromUid)
+  );
+
   if (authLoading || loadingData) {
     return (
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-28">
@@ -389,13 +387,36 @@ export default function FriendsPage() {
 
   if (!user) {
     return (
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-28">
-        <div className="rounded-xl glass-surface glass-readable p-8 text-center space-y-4">
-          <Users className="h-12 w-12 mx-auto text-muted-foreground" />
-          <h2 className="text-xl font-semibold">Sign in to view Friends</h2>
-          <p className="text-sm text-muted-foreground">
-            Connect with friends to encourage one another in worship.
-          </p>
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12 space-y-4">
+        <header className="relative">
+          <button
+            onClick={() => router.back()}
+            className={cn(
+              "group absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 h-10 px-4 rounded-full",
+              "glass-surface glass-readable",
+              "text-sm font-medium transition-all duration-200",
+              "hover:brightness-[0.92] dark:hover:brightness-[0.85]"
+            )}
+          >
+            <ChevronLeft className={cn(
+              "h-4 w-4 transition-all duration-200",
+              "group-hover:text-green-600 dark:group-hover:text-green-400",
+              "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+            )} />
+            <span className={cn(
+              "transition-all duration-200",
+              "group-hover:text-green-600 dark:group-hover:text-green-400",
+              "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+            )}>
+              Back
+            </span>
+          </button>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">Friends</h1>
+            <p className="text-muted-foreground">Sign in to connect with friends.</p>
+          </div>
+        </header>
+        <div className="flex items-center justify-center pt-4">
           <Button onClick={() => router.push("/signin?next=/friends")}>
             Sign In
           </Button>
@@ -405,24 +426,47 @@ export default function FriendsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-24 space-y-8">
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">
       {/* Header */}
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">Friends</h1>
-        <p className="text-sm text-muted-foreground">
-          Connect with friends to encourage one another in worship.
-        </p>
+      <header className="relative mb-6">
+        <button
+          onClick={() => router.back()}
+          className={cn(
+            "group absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 h-10 px-4 rounded-full",
+            "glass-surface glass-readable",
+            "text-sm font-medium transition-all duration-200",
+            "hover:brightness-[0.92] dark:hover:brightness-[0.85]"
+          )}
+        >
+          <ChevronLeft className={cn(
+            "h-4 w-4 transition-all duration-200",
+            "group-hover:text-green-600 dark:group-hover:text-green-400",
+            "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+          )} />
+          <span className={cn(
+            "transition-all duration-200",
+            "group-hover:text-green-600 dark:group-hover:text-green-400",
+            "group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+          )}>
+            Back
+          </span>
+        </button>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Friends</h1>
+          <p className="text-muted-foreground">Connect with friends to encourage one another.</p>
+        </div>
       </header>
 
-      {/* Section 1: Add Friend */}
-      <section className="rounded-xl glass-surface glass-readable p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <UserPlus className="h-5 w-5" />
-          <h2 className="text-lg font-semibold">Add Friend</h2>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Search by unique handle or paste a User ID to find friends.
-        </p>
+      <div className="space-y-6">
+        {/* Section 1: Add Friend */}
+        <section className="rounded-xl glass-surface glass-readable p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">Add Friend</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Search by unique handle or paste a User ID to find friends.
+          </p>
 
         <div className="flex gap-2">
           <Input
@@ -475,11 +519,11 @@ export default function FriendsPage() {
               )}
             </ProfileCardPreview>
           </div>
-        )}
-      </section>
+          )}
+        </section>
 
-      {/* Section 2: Friend Requests */}
-      <section className="rounded-xl glass-surface glass-readable p-5 space-y-4">
+        {/* Section 2: Friend Requests */}
+        <section className="rounded-xl glass-surface glass-readable p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Clock className="h-5 w-5" />
           <h2 className="text-lg font-semibold">Friend Requests</h2>
@@ -488,15 +532,15 @@ export default function FriendsPage() {
         {/* Incoming Requests */}
         <div className="space-y-3">
           <div className="text-sm font-medium">
-            Incoming ({incomingRequests.length})
+            Incoming ({displayIncomingRequests.length})
           </div>
-          {incomingRequests.length === 0 ? (
+          {displayIncomingRequests.length === 0 ? (
             <div className="text-sm text-muted-foreground rounded-lg glass-surface glass-readable p-4">
               No incoming requests.
             </div>
           ) : (
             <div className="space-y-2">
-              {incomingRequests.map((request) =>
+              {displayIncomingRequests.map((request) =>
                 request.profile ? (
                   <ProfileCardPreview
                     key={request.fromUid}
@@ -569,14 +613,14 @@ export default function FriendsPage() {
               )}
             </div>
           )}
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Section 3: Friends List */}
-      <section className="rounded-xl glass-surface glass-readable p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          <h2 className="text-lg font-semibold">Your Friends</h2>
+        {/* Section 3: Friends List */}
+        <section className="rounded-xl glass-surface glass-readable p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">Your Friends</h2>
           <Badge variant="secondary" className="ml-auto">
             {friends.length}
           </Badge>
@@ -599,13 +643,13 @@ export default function FriendsPage() {
               ) : null
             )}
           </div>
-        )}
-      </section>
+          )}
+        </section>
 
-      {/* Section 4: Challenges (Coming Soon) */}
-      <section className="rounded-xl glass-surface glass-readable p-5 space-y-4 opacity-60">
-        <div className="flex items-center gap-2">
-          <Trophy className="h-5 w-5" />
+        {/* Section 4: Challenges (Coming Soon) */}
+        <section className="rounded-xl glass-surface glass-readable p-5 space-y-4 opacity-60">
+          <div className="flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
           <h2 className="text-lg font-semibold">Challenges</h2>
           <Badge variant="outline" className="ml-2">
             <Lock className="h-3 w-3 mr-1" />
@@ -644,15 +688,15 @@ export default function FriendsPage() {
             </div>
           </div>
         </div>
-        <div className="text-xs text-muted-foreground text-center">
-          Available in a future update
-        </div>
-      </section>
+          <div className="text-xs text-muted-foreground text-center">
+            Available in a future update
+          </div>
+        </section>
 
-      {/* Section 5: Encouragement / Friend Notifications (Coming Soon) */}
-      <section className="rounded-xl glass-surface glass-readable p-5 space-y-4 opacity-60">
-        <div className="flex items-center gap-2">
-          <Bell className="h-5 w-5" />
+        {/* Section 5: Encouragement / Friend Notifications (Coming Soon) */}
+        <section className="rounded-xl glass-surface glass-readable p-5 space-y-4 opacity-60">
+          <div className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
           <h2 className="text-lg font-semibold">Encouragement</h2>
           <Badge variant="outline" className="ml-2">
             <Lock className="h-3 w-3 mr-1" />
@@ -689,10 +733,11 @@ export default function FriendsPage() {
             </Button>
           </div>
         </div>
-        <div className="text-xs text-muted-foreground text-center">
-          Available in a future update
-        </div>
-      </section>
+          <div className="text-xs text-muted-foreground text-center">
+            Available in a future update
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
