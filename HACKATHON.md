@@ -20,6 +20,7 @@ system.
 - [Architecture](#architecture)
 - [Why forced alignment (and not Whisper)](#why-forced-alignment-and-not-whisper)
 - [Edge cases the script handles](#edge-cases-the-script-handles)
+- [How we used the Quran Foundation APIs](#how-we-used-the-quran-foundation-apis)
 - [Validation results](#validation-results)
 - [Known limitations](#known-limitations)
 - [Credits](#credits)
@@ -297,6 +298,58 @@ a single grep-able line:
 
 This is what the overnight batch validation harness reads. We are deliberately
 not hiding the numbers.
+
+---
+
+## How we used the Quran Foundation APIs
+
+The Quran Foundation APIs are the **single source of truth** the whole helper
+sits on. Without them there is no canonical word list to align against, no
+ground-truth timings to validate against, and no reciter catalogue to register
+new entries into. We use the APIs in two distinct ways: the **production app**
+talks to the authenticated `apis.quran.foundation` content endpoint, and the
+**hackathon helper / validation scripts** talk to the public `api.quran.com/v4`
+mirror (same data, no auth header, easier for a reproducible CLI demo).
+
+### Endpoints and what each one is doing for us
+
+| Endpoint | Where we call it | What we do with the response |
+| --- | --- | --- |
+| `GET /chapters` | `src/app/quran/page.tsx`, `src/app/api/qf/chapters/route.ts` | Build the surah picker in the main reader (114 surah metadata records). |
+| `GET /chapters/{id}` | `src/app/quran/[surah]/page.tsx` | Page title, verse count, revelation place shown on each surah page. |
+| `GET /verses/by_chapter/{surah}?words=true&word_fields=qpc_uthmani_hafs` | `scripts/align-audio.py`, `scripts/batch-validate.py`, `src/app/quran/[surah]/page.tsx`, `src/app/api/qf/verses/[chapter]/route.ts` | **The core input to forced alignment.** We pull every word for the surah (skipping `char_type_name === "end"` separators), keep the `qpc_uthmani_hafs` Arabic text, and feed it to the aligner as the known token sequence. The same response drives the reader's verse rendering. |
+| `GET /verses/by_chapter/1?words=true` | `scripts/align-audio.py` (bismillah prefix path) | When `--prepend-bismillah` is set we re-use Surah 1's first four words (Bismillah) as a "throwaway" alignment prefix so non-Fatiha recordings with a Bismillah intro don't stretch verse 1's first word across the intro. |
+| `GET /chapter_recitations/{reciter_id}/{surah}?segments=true` | `scripts/align-audio.py` (validation mode), `scripts/batch-validate.py`, `src/components/quran/AudioPlayerBar.tsx`, `src/app/api/qf/audio/[reciterId]/[chapter]/route.ts` | (1) Fetches the MP3 URL for the audio we then align. (2) Parses the `segments` array (`[verseNum, wordStart, wordEnd, msStart, msEnd]`) into per-word reference timings used as **ground truth** in the validation dashboard. Every "QF reference" number on `/hackathon-helper/report` comes from this endpoint. |
+| `GET /recitations/{reciter_id}/by_chapter/{surah}?fields=segments` | `src/components/quran/AudioPlayerBar.tsx`, `src/app/quran/[surah]/page.tsx` | Per-verse alignment fallback for reciters that publish per-verse rather than per-chapter audio. |
+| `GET /chapter_reciters/{reciter}/audio_files` | `src/app/api/qf/recitations/[reciter]/chapter/[chapter]/route.ts` | Lists the per-surah audio files for a reciter so the picker can offer all 114 surahs without an extra round-trip per surah. |
+| `GET /resources/translations`, `GET /resources/languages` | `src/app/api/qf/translations/route.ts`, `src/app/api/qf/word-translations/route.ts`, settings page | Populate the translation / word-by-word language pickers in settings. Not used by the aligner itself, but they're part of the broader QF integration. |
+
+### Where the QF data flows through the helper
+
+1. **Word list ingestion.** When a user opens `/hackathon-helper`, picks a surah, and clicks **Generate alignment**, the API route at `src/app/api/hackathon-align/route.ts` spawns `scripts/align-audio.py` which calls `/verses/by_chapter/{surah}?words=true` first. That response **defines** the alignment target — we never invent or normalise Arabic text ourselves.
+2. **Audio URL resolution.** In validation mode (`--reciter-id`), the script hits `/chapter_recitations/{reciter_id}/{surah}?segments=true`, pulls `audio_url`, and streams the MP3 from QF's CDN into a temp file. No QF audio is committed to the repo.
+3. **Reference timings = ground truth.** The same `?segments=true` response contains QF's published per-word timings (`[verseNum, wordStart, wordEnd, msStart, msEnd]`). The validation harness pairs every predicted word start against `msStart` from this array — that's where the per-word `delta_ms` values in `scripts/output/per-word/*.json` come from.
+4. **Reader integration.** The output JSON our aligner writes (`public/demo/<slug>/<surah>.json`) matches the **exact shape** that `AudioPlayerBar.tsx` already builds from QF's `/recitations/{id}/by_chapter/{surah}?fields=segments` response. That's why no player changes were needed — we hand the existing QF code path a QF-shaped payload.
+
+### Authentication and the two hosts
+
+Because the official QF content API (`apis.quran.foundation/content/api/v4`) requires
+an OAuth client-credentials token, the production app gets one server-side via
+`src/lib/server/qf.ts` (helper `qfGet()`) using `QF_CLIENT_ID` / `QF_CLIENT_SECRET`
+environment variables, and proxies safe routes through `src/app/api/qf/*` so
+client-side code never sees the token. The hackathon CLI scripts deliberately
+hit the **public** `api.quran.com/api/v4` mirror instead — same data, no
+credentials needed — so anyone cloning the repo can reproduce the validation
+run without setting up secrets.
+
+### What we did *not* re-implement
+
+We did not roll our own Quran text, our own word index, our own verse
+segmentation, or our own reciter catalogue. Every one of those came directly
+from a Quran Foundation endpoint. The hackathon contribution is the bridge
+between **arbitrary audio in** and **QF-shaped word timings out**, so an audio
+file outside QF's catalogue can flow through the rest of the app exactly as
+if QF had timed it itself.
 
 ---
 
