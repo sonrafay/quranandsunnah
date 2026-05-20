@@ -71,10 +71,8 @@ export const RECITERS: ReciterConfig[] = [
   { id: 97, name: "Yasser Ad Dussary", displayName: "Yasser Ad Dussary - beta", variant: "beta", sourceType: "legacy_qdc", slug: "yasser_ad_dossari", qdcSlug: "yasser_ad-dussary" },
 
   // Hackathon demo entries — forced-alignment output committed under public/demo/{slug}/{surahPadded}.json
-  { id: 9001, name: "Demo Aligner", displayName: "Demo — Mishari (Forced Alignment)", variant: null, sourceType: "local_demo", slug: "afasy-validation" },
-  { id: 9002, name: "Muhammad Al-Luhaidan", displayName: "Demo — Muhammad Al-Luhaidan", variant: null, sourceType: "local_demo", slug: "muhammad-al-luhaidan" },
   { id: 9003, name: "Ibi Idris", displayName: "Demo — Ibi Idris", variant: null, sourceType: "local_demo", slug: "ibi-idris" },
-  { id: 9004, name: "Yasser Al-Dosari (beta test)", displayName: "Demo — Yasser Al-Dosari (beta test)", variant: null, sourceType: "local_demo", slug: "yasser-al-dosari-beta" },
+  { id: 9004, name: "Yasser Al-Dosari", displayName: "Demo — Yasser Al-Dosari", variant: null, sourceType: "local_demo", slug: "yasser-al-dosari-beta" },
 ];
 
 /**
