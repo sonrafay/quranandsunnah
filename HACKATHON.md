@@ -1,11 +1,28 @@
 # Quran.foundation Hackathon — Forced-Alignment Helper
 
-This document is the entry point for the hackathon submission. The rest of
+This document is the **entry point for the hackathon submission**. The rest of
 this repository is a working Next.js Quran-reader product; the **forced-alignment
 helper** described here is a layer added on top so any recitation audio — your
 own recording, a YouTube clip, or an MP3 from a non-QF reciter — can be turned
 into per-word timestamps that drive the player's existing word-highlight
 system.
+
+> **Judges, start here.** Section [Where the code lives](#where-the-code-lives)
+> has every hackathon file in one table. Everything else in the repo
+> (Firestore rules, friends system, prayer-time UI, etc.) is the underlying
+> product and was not built for this hackathon.
+
+## Contents
+- [TL;DR — what we built](#tldr--what-we-built)
+- [Costs, fees, and dependencies](#costs-fees-and-dependencies)
+- [Where the code lives](#where-the-code-lives)
+- [How to run it](#how-to-run-it)
+- [Architecture](#architecture)
+- [Why forced alignment (and not Whisper)](#why-forced-alignment-and-not-whisper)
+- [Edge cases the script handles](#edge-cases-the-script-handles)
+- [Validation results](#validation-results)
+- [Known limitations](#known-limitations)
+- [Credits](#credits)
 
 ---
 
@@ -21,6 +38,35 @@ A standalone helper, runnable from a browser, that:
 6. Registers the new reciter so the **same player** the rest of the app uses now highlights words in sync with the new audio.
 
 Validation against Mishari Al-Afasy + Surah 1 (29 words, QF reference timings as ground truth) shows **93.1 % within ±100 ms** and **100 % within ±250 ms**, mean absolute error ≈ 42 ms.
+
+---
+
+## Costs, fees, and dependencies
+
+**Total recurring cost to run this: $0.** Nothing in the pipeline calls a paid
+API.
+
+| What | Cost | Notes |
+| --- | --- | --- |
+| `wav2vec2-mms` alignment model | Free | Downloaded once from HuggingFace (~1 GB), runs locally on CPU. |
+| `uroman` (Arabic→Latin romanizer) | Free | Pure-Python library. |
+| Public Quran.com API (`/verses/by_chapter`, `/chapter_recitations`) | Free | Unauthenticated public mirror — no key needed. |
+| `yt-dlp` / `ffmpeg` | Free | OSS binaries the user installs locally. |
+| Hosting | None | Helper runs in the same `npm run dev` process as the app. No cloud functions, no managed services, no database writes. |
+
+No OpenAI / Whisper API keys, no Google Cloud Speech, no AssemblyAI — we
+deliberately picked an offline forced-alignment model so the demo is fully
+reproducible and runs the same on any laptop.
+
+**System deps the host machine needs** (all free, OSS):
+
+- Python 3.10+ (for the venv)
+- ffmpeg (audio normalization, available via apt/brew/winget)
+- yt-dlp (only if you want the YouTube path; pip install)
+- Node 18+ (already required by the Next.js app)
+
+The MMS model download is ~1 GB and is the only "heavy" thing. After the
+first run it's cached forever in `~/.cache/torch/hub/torchaudio/`.
 
 ---
 

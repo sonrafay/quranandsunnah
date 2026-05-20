@@ -6,6 +6,16 @@ One clean place for **Quran**, **Hadith**, and **Prayer** — free for everyone.
 
 ---
 
+> 🏆 **Quran.foundation Hackathon submission lives in [`HACKATHON.md`](./HACKATHON.md).**
+> That doc is the single entry point: where every hackathon file lives, how to
+> run the forced-alignment helper at `/hackathon-helper`, the architecture, the
+> edge cases handled, and the validation numbers. Helper sources:
+> [`scripts/align-audio.py`](./scripts/align-audio.py),
+> [`src/app/hackathon-helper/`](./src/app/hackathon-helper/),
+> [`src/app/api/hackathon-align/`](./src/app/api/hackathon-align/).
+
+---
+
 ## ✨ Features (current)
 
 - **Landing** page with mission and verses cloud
