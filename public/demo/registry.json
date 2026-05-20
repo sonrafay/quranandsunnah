@@ -1,24 +1,3 @@
 {
-  "demos": [
-    {
-      "id": 9100,
-      "slug": "hackathon-yasseraldossary",
-      "name": "Hackathon - YasserAlDossary",
-      "displayName": "Demo — Hackathon - YasserAlDossary",
-      "surahs": [
-        1
-      ],
-      "createdAt": "2026-05-20T00:15:55.741Z"
-    },
-    {
-      "id": 9101,
-      "slug": "hackathondemo-yasser-al-dossary",
-      "name": "hackathondemo - Yasser Al Dossary",
-      "displayName": "Demo — hackathondemo - Yasser Al Dossary",
-      "surahs": [
-        109
-      ],
-      "createdAt": "2026-05-20T00:19:24.254Z"
-    }
-  ]
+  "demos": []
 }

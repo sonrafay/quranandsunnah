@@ -426,7 +426,7 @@ it's there to make the data transparent.
 - `scripts/output/batch-validation-summary.json` — machine-readable aggregate the dashboard reads.
 - `scripts/output/batch-validation.png` — the matplotlib dashboard (also embedded in the live page).
 - `scripts/output/per-word/r7_s{NNN}.json` — every predicted vs reference word pair with `delta_ms` for surah `NNN`.
-- `public/demo/afasy-validation/001.report.json` — single-surah report from the original `/goal` evaluator run.
+- `scripts/output/r7_s{NNN}.report.json` — per-surah validation report (`words_compared`, `within_100ms_pct`, `within_250ms_pct`, `mean_abs_error_ms`).
 
 ---
 
