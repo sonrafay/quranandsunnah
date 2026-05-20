@@ -54,12 +54,23 @@ def read_rows(csv_path: Path) -> list[dict]:
     return rows
 
 
-def gather_all_deltas(per_word_dir: Path) -> tuple[list[float], dict[int, list[float]]]:
-    """Walk per-word JSONs and return (all_deltas, deltas_by_surah)."""
+def gather_all_deltas(per_word_dir: Path) -> tuple[list[float], dict[int, list[float]], dict[int, dict]]:
+    """Walk per-word JSONs and return:
+      - all_deltas: every |predicted - reference| in ms (raw)
+      - deltas_by_surah: same but keyed by surah
+      - per_surah_offset: { surah: { median_offset_ms, corrected_deltas, ... } }
+
+    The "offset-corrected" deltas subtract the surah's median *signed* offset
+    from each per-word signed delta, then take abs. This isolates the model's
+    intrinsic precision from any surah-wide systematic offset in QF's reference
+    timings (which we found vary from +88 ms to +2625 ms across surahs — a
+    strong signal that QF marks word slots, not audible onsets).
+    """
     all_deltas: list[float] = []
     by_surah: dict[int, list[float]] = {}
+    per_surah_offset: dict[int, dict] = {}
     if not per_word_dir.exists():
-        return all_deltas, by_surah
+        return all_deltas, by_surah, per_surah_offset
     for p in sorted(per_word_dir.glob("*.json")):
         try:
             data = json.loads(p.read_text())
@@ -67,10 +78,32 @@ def gather_all_deltas(per_word_dir: Path) -> tuple[list[float], dict[int, list[f
             continue
         surah = int(data.get("surah", 0))
         pairs = data.get("pairs", []) or []
-        deltas = [pair["delta_ms"] for pair in pairs if pair.get("delta_ms") is not None]
-        by_surah.setdefault(surah, []).extend(deltas)
-        all_deltas.extend(deltas)
-    return all_deltas, by_surah
+        signed = [
+            (pair["predicted_start"] * 1000.0 - pair["reference_start_ms"])
+            for pair in pairs
+            if pair.get("reference_start_ms") is not None
+        ]
+        if not signed:
+            continue
+        signed_sorted = sorted(signed)
+        median_offset = signed_sorted[len(signed_sorted) // 2]
+        raw_abs = [abs(s) for s in signed]
+        corrected_abs = [abs(s - median_offset) for s in signed]
+        by_surah.setdefault(surah, []).extend(raw_abs)
+        all_deltas.extend(raw_abs)
+        per_surah_offset[surah] = {
+            "median_offset_ms": round(median_offset, 1),
+            "corrected_deltas": corrected_abs,
+            "raw_deltas": raw_abs,
+            "n_words": len(signed),
+        }
+    return all_deltas, by_surah, per_surah_offset
+
+
+def _pct_within(values: list[float], tol: float) -> float:
+    if not values:
+        return 0.0
+    return round(100.0 * sum(1 for v in values if v <= tol) / len(values), 1)
 
 
 def percentile(sorted_values: list[float], p: float) -> float | None:
@@ -80,7 +113,7 @@ def percentile(sorted_values: list[float], p: float) -> float | None:
     return float(sorted_values[k])
 
 
-def render(rows: list[dict], all_deltas: list[float], out_png: Path) -> None:
+def render(rows: list[dict], all_deltas: list[float], all_corrected: list[float], out_png: Path) -> None:
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -157,27 +190,28 @@ def render(rows: list[dict], all_deltas: list[float], out_png: Path) -> None:
                  ha="center", va="center", fontsize=10, color="#999")
         ax3.set_axis_off()
 
-    # ---- (4) CDF ----
+    # ---- (4) CDF (raw vs offset-corrected) ----
     if all_deltas:
         sorted_d = sorted(all_deltas)
         n = len(sorted_d)
         ys = [100 * (i + 1) / n for i in range(n)]
-        ax4.plot(sorted_d, ys, color="#10b981", linewidth=2)
+        ax4.plot(sorted_d, ys, color="#f59e0b", linewidth=2,
+                 label=f"Raw vs QF reference (n={n})")
+        if all_corrected:
+            sorted_c = sorted(all_corrected)
+            nc = len(sorted_c)
+            yc = [100 * (i + 1) / nc for i in range(nc)]
+            ax4.plot(sorted_c, yc, color="#10b981", linewidth=2,
+                     label=f"Offset-corrected (n={nc})")
         ax4.set_xscale("log")
         ax4.set_xlim(1, max(10000, max(sorted_d) + 100))
         ax4.set_xlabel("Per-word error (ms, log scale)")
         ax4.set_ylabel("Cumulative % of words")
-        ax4.set_title("Cumulative distribution function", loc="left", fontweight="bold")
+        ax4.set_title("CDF: raw vs offset-corrected", loc="left", fontweight="bold")
         ax4.grid(linestyle=":", alpha=0.5)
-        ax4.axvline(100, color="#065f46", linestyle="--", linewidth=1, alpha=0.6)
-        ax4.axvline(250, color="#1e3a8a", linestyle="--", linewidth=1, alpha=0.6)
-        for pct in (50, 90, 95):
-            v = percentile(sorted_d, pct)
-            if v is None:
-                continue
-            ax4.axhline(pct, color="#999", linestyle=":", linewidth=0.6, alpha=0.6)
-            ax4.text(v, pct, f"  p{pct}={v:.0f}ms", fontsize=7, color="#444",
-                     va="bottom", ha="left")
+        ax4.axvline(100, color="#065f46", linestyle="--", linewidth=1, alpha=0.5)
+        ax4.axvline(250, color="#1e3a8a", linestyle="--", linewidth=1, alpha=0.5)
+        ax4.legend(loc="lower right", framealpha=0.9, fontsize=8)
     else:
         ax4.text(0.5, 0.5, "No per-word data.", ha="center", va="center", color="#999")
         ax4.set_axis_off()
@@ -210,8 +244,38 @@ def render(rows: list[dict], all_deltas: list[float], out_png: Path) -> None:
     print(f"[INFO] Wrote {out_png}")
 
 
-def build_summary(rows: list[dict], all_deltas: list[float]) -> dict:
+def build_summary(rows: list[dict], all_deltas: list[float], per_surah_offset: dict[int, dict]) -> dict:
     sorted_d = sorted(all_deltas)
+    all_corrected: list[float] = []
+    for v in per_surah_offset.values():
+        all_corrected.extend(v.get("corrected_deltas", []))
+    sorted_c = sorted(all_corrected)
+
+    per_surah_out = []
+    for r in rows:
+        s = r["surah"]
+        off = per_surah_offset.get(s, {})
+        corrected = off.get("corrected_deltas", [])
+        per_surah_out.append({
+            "surah": s,
+            "audio_duration_sec": r["audio_duration_sec"],
+            "alignment_seconds": r["alignment_seconds"],
+            "words_compared": r["words_compared"],
+            # raw = predicted_start - reference_start, abs
+            "within_100ms_pct": r["within_100ms_pct"],
+            "within_250ms_pct": r["within_250ms_pct"],
+            "mean_abs_error_ms": r["mean_abs_error_ms"],
+            # offset-corrected = after subtracting this surah's median signed offset
+            "median_offset_ms": off.get("median_offset_ms"),
+            "corrected_within_100ms_pct": _pct_within(corrected, 100) if corrected else None,
+            "corrected_within_250ms_pct": _pct_within(corrected, 250) if corrected else None,
+            "corrected_mean_abs_error_ms": round(sum(corrected) / len(corrected), 1) if corrected else None,
+        })
+
+    def avg(field: str) -> float | None:
+        vals = [r[field] for r in per_surah_out if r.get(field) is not None]
+        return round(sum(vals) / len(vals), 2) if vals else None
+
     return {
         "reciter_id": 7,
         "reciter_name": "Mishari Rashid al-`Afasy",
@@ -222,6 +286,12 @@ def build_summary(rows: list[dict], all_deltas: list[float]) -> dict:
         "avg_within_100ms_pct": round(statistics.mean(r["within_100ms_pct"] for r in rows), 2) if rows else None,
         "avg_within_250ms_pct": round(statistics.mean(r["within_250ms_pct"] for r in rows), 2) if rows else None,
         "avg_mean_abs_error_ms": round(statistics.mean(r["mean_abs_error_ms"] for r in rows), 2) if rows else None,
+        # Offset-corrected aggregate — what the model's actual precision looks
+        # like once each surah's median signed offset (a QF reference quirk) is
+        # subtracted. This is closer to what the user observes visually.
+        "avg_corrected_within_100ms_pct": avg("corrected_within_100ms_pct"),
+        "avg_corrected_within_250ms_pct": avg("corrected_within_250ms_pct"),
+        "avg_corrected_mean_abs_error_ms": avg("corrected_mean_abs_error_ms"),
         "per_word_error_ms": {
             "count": len(sorted_d),
             "min": round(sorted_d[0], 1) if sorted_d else None,
@@ -232,23 +302,23 @@ def build_summary(rows: list[dict], all_deltas: list[float]) -> dict:
             "max": round(sorted_d[-1], 1) if sorted_d else None,
             "mean": round(sum(sorted_d) / len(sorted_d), 1) if sorted_d else None,
         },
-        "per_surah": [
-            {
-                "surah": r["surah"],
-                "audio_duration_sec": r["audio_duration_sec"],
-                "alignment_seconds": r["alignment_seconds"],
-                "words_compared": r["words_compared"],
-                "within_100ms_pct": r["within_100ms_pct"],
-                "within_250ms_pct": r["within_250ms_pct"],
-                "mean_abs_error_ms": r["mean_abs_error_ms"],
-            }
-            for r in rows
-        ],
+        "per_word_error_ms_corrected": {
+            "count": len(sorted_c),
+            "min": round(sorted_c[0], 1) if sorted_c else None,
+            "median": round(percentile(sorted_c, 50), 1) if sorted_c else None,
+            "p90": round(percentile(sorted_c, 90), 1) if sorted_c else None,
+            "p95": round(percentile(sorted_c, 95), 1) if sorted_c else None,
+            "p99": round(percentile(sorted_c, 99), 1) if sorted_c else None,
+            "max": round(sorted_c[-1], 1) if sorted_c else None,
+            "mean": round(sum(sorted_c) / len(sorted_c), 1) if sorted_c else None,
+        },
+        "per_surah": per_surah_out,
     }
 
 
 def write_summary_txt(summary: dict, out_txt: Path) -> None:
     pwd = summary["per_word_error_ms"]
+    pwdc = summary.get("per_word_error_ms_corrected", {})
     lines = [
         f"Reciter:         {summary['reciter_name']} (id {summary['reciter_id']})",
         f"Surahs:          {summary['surahs_validated']}",
@@ -256,17 +326,18 @@ def write_summary_txt(summary: dict, out_txt: Path) -> None:
         f"Total audio:     {summary['total_audio_seconds']}s",
         f"Total CPU time:  {summary['total_alignment_seconds']}s",
         "",
-        f"Avg accuracy within ±100ms : {summary['avg_within_100ms_pct']}%",
-        f"Avg accuracy within ±250ms : {summary['avg_within_250ms_pct']}%",
-        f"Avg mean absolute error    : {summary['avg_mean_abs_error_ms']} ms",
+        "RAW (predicted_start − QF reference_start):",
+        f"  within ±100ms     : {summary['avg_within_100ms_pct']}%",
+        f"  within ±250ms     : {summary['avg_within_250ms_pct']}%",
+        f"  mean abs error    : {summary['avg_mean_abs_error_ms']} ms",
+        f"  per-word median   : {pwd.get('median')} ms · p95 {pwd.get('p95')} ms",
         "",
-        "Per-word error distribution (across all surahs):",
-        f"  median  : {pwd.get('median')} ms",
-        f"  p90     : {pwd.get('p90')} ms",
-        f"  p95     : {pwd.get('p95')} ms",
-        f"  p99     : {pwd.get('p99')} ms",
-        f"  max     : {pwd.get('max')} ms",
-        f"  mean    : {pwd.get('mean')} ms",
+        "OFFSET-CORRECTED (each surah's median signed offset subtracted —",
+        "isolates model precision from QF's surah-specific timing convention):",
+        f"  within ±100ms     : {summary.get('avg_corrected_within_100ms_pct')}%",
+        f"  within ±250ms     : {summary.get('avg_corrected_within_250ms_pct')}%",
+        f"  mean abs error    : {summary.get('avg_corrected_mean_abs_error_ms')} ms",
+        f"  per-word median   : {pwdc.get('median')} ms · p95 {pwdc.get('p95')} ms",
     ]
     out_txt.parent.mkdir(parents=True, exist_ok=True)
     out_txt.write_text("\n".join(lines) + "\n")
@@ -288,15 +359,18 @@ def main() -> int:
         return 2
 
     rows = read_rows(csv_path)
-    all_deltas, _by_surah = gather_all_deltas(Path(args.per_word_dir))
+    all_deltas, _by_surah, per_surah_offset = gather_all_deltas(Path(args.per_word_dir))
+    all_corrected: list[float] = []
+    for v in per_surah_offset.values():
+        all_corrected.extend(v.get("corrected_deltas", []))
 
-    summary = build_summary(rows, all_deltas)
+    summary = build_summary(rows, all_deltas, per_surah_offset)
     Path(args.out_json).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out_json).write_text(json.dumps(summary, indent=2))
     print(f"[INFO] Wrote {args.out_json}")
 
     write_summary_txt(summary, Path(args.out_txt))
-    render(rows, all_deltas, Path(args.out_png))
+    render(rows, all_deltas, all_corrected, Path(args.out_png))
     return 0
 
 

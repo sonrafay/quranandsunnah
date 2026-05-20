@@ -1,0 +1,343 @@
+{
+  "reciter_id": 7,
+  "surah": 99,
+  "matched": 36,
+  "predicted_total": 36,
+  "reference_total": 36,
+  "delta_stats": {
+    "count": 36,
+    "min_ms": 10.0,
+    "median_ms": 599.0,
+    "p90_ms": 841.0,
+    "p95_ms": 952.0,
+    "p99_ms": 1092.0,
+    "max_ms": 1092.0,
+    "mean_ms": 499.2
+  },
+  "pairs": [
+    {
+      "verseNum": 1,
+      "wordIndex": 1,
+      "predicted_start": 0.08,
+      "predicted_end": 0.67,
+      "reference_start_ms": 0,
+      "reference_end_ms": 690,
+      "delta_ms": 80.0
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 2,
+      "predicted_start": 0.7,
+      "predicted_end": 1.72,
+      "reference_start_ms": 690,
+      "reference_end_ms": 1730,
+      "delta_ms": 10.0
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 3,
+      "predicted_start": 1.72,
+      "predicted_end": 2.57,
+      "reference_start_ms": 1730,
+      "reference_end_ms": 2580,
+      "delta_ms": 10.0
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 4,
+      "predicted_start": 2.6,
+      "predicted_end": 3.881,
+      "reference_start_ms": 2580,
+      "reference_end_ms": 4295,
+      "delta_ms": 20.0
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 1,
+      "predicted_start": 4.901,
+      "predicted_end": 6.141,
+      "reference_start_ms": 4295,
+      "reference_end_ms": 5675,
+      "delta_ms": 606.0
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 2,
+      "predicted_start": 6.141,
+      "predicted_end": 6.851,
+      "reference_start_ms": 5675,
+      "reference_end_ms": 6465,
+      "delta_ms": 466.0
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 3,
+      "predicted_start": 6.881,
+      "predicted_end": 8.221,
+      "reference_start_ms": 6465,
+      "reference_end_ms": 8160,
+      "delta_ms": 416.0
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 1,
+      "predicted_start": 9.362,
+      "predicted_end": 10.152,
+      "reference_start_ms": 8645,
+      "reference_end_ms": 9575,
+      "delta_ms": 717.0
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 2,
+      "predicted_start": 10.182,
+      "predicted_end": 12.572,
+      "reference_start_ms": 9575,
+      "reference_end_ms": 11955,
+      "delta_ms": 607.0
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 3,
+      "predicted_start": 12.602,
+      "predicted_end": 13.012,
+      "reference_start_ms": 11955,
+      "reference_end_ms": 12435,
+      "delta_ms": 647.0
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 4,
+      "predicted_start": 13.042,
+      "predicted_end": 14.413,
+      "reference_start_ms": 12435,
+      "reference_end_ms": 13140,
+      "delta_ms": 607.0
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 1,
+      "predicted_start": 14.443,
+      "predicted_end": 16.473,
+      "reference_start_ms": 13765,
+      "reference_end_ms": 15945,
+      "delta_ms": 678.0
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 2,
+      "predicted_start": 16.503,
+      "predicted_end": 17.433,
+      "reference_start_ms": 15945,
+      "reference_end_ms": 16985,
+      "delta_ms": 558.0
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 3,
+      "predicted_start": 17.463,
+      "predicted_end": 18.803,
+      "reference_start_ms": 16985,
+      "reference_end_ms": 18640,
+      "delta_ms": 478.0
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 1,
+      "predicted_start": 19.864,
+      "predicted_end": 21.534,
+      "reference_start_ms": 19215,
+      "reference_end_ms": 20965,
+      "delta_ms": 649.0
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 2,
+      "predicted_start": 21.564,
+      "predicted_end": 22.394,
+      "reference_start_ms": 20965,
+      "reference_end_ms": 21905,
+      "delta_ms": 599.0
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 3,
+      "predicted_start": 22.424,
+      "predicted_end": 23.284,
+      "reference_start_ms": 21905,
+      "reference_end_ms": 22775,
+      "delta_ms": 519.0
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 4,
+      "predicted_start": 23.284,
+      "predicted_end": 23.664,
+      "reference_start_ms": 22775,
+      "reference_end_ms": 23430,
+      "delta_ms": 509.0
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 1,
+      "predicted_start": 24.684,
+      "predicted_end": 26.555,
+      "reference_start_ms": 23965,
+      "reference_end_ms": 25975,
+      "delta_ms": 719.0
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 2,
+      "predicted_start": 26.585,
+      "predicted_end": 27.395,
+      "reference_start_ms": 25975,
+      "reference_end_ms": 26795,
+      "delta_ms": 610.0
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 3,
+      "predicted_start": 27.425,
+      "predicted_end": 28.975,
+      "reference_start_ms": 26795,
+      "reference_end_ms": 28425,
+      "delta_ms": 630.0
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 4,
+      "predicted_start": 29.005,
+      "predicted_end": 30.295,
+      "reference_start_ms": 28425,
+      "reference_end_ms": 29505,
+      "delta_ms": 580.0
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 5,
+      "predicted_start": 30.325,
+      "predicted_end": 31.236,
+      "reference_start_ms": 29505,
+      "reference_end_ms": 30525,
+      "delta_ms": 820.0
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 6,
+      "predicted_start": 31.266,
+      "predicted_end": 33.296,
+      "reference_start_ms": 30525,
+      "reference_end_ms": 32480,
+      "delta_ms": 741.0
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 1,
+      "predicted_start": 33.326,
+      "predicted_end": 34.516,
+      "reference_start_ms": 33125,
+      "reference_end_ms": 33705,
+      "delta_ms": 201.0
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 2,
+      "predicted_start": 34.546,
+      "predicted_end": 35.416,
+      "reference_start_ms": 33705,
+      "reference_end_ms": 35265,
+      "delta_ms": 841.0
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 3,
+      "predicted_start": 35.446,
+      "predicted_end": 36.497,
+      "reference_start_ms": 35265,
+      "reference_end_ms": 36375,
+      "delta_ms": 181.0
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 4,
+      "predicted_start": 36.527,
+      "predicted_end": 37.557,
+      "reference_start_ms": 36375,
+      "reference_end_ms": 37375,
+      "delta_ms": 152.0
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 5,
+      "predicted_start": 37.587,
+      "predicted_end": 39.097,
+      "reference_start_ms": 37375,
+      "reference_end_ms": 38175,
+      "delta_ms": 212.0
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 6,
+      "predicted_start": 39.127,
+      "predicted_end": 40.457,
+      "reference_start_ms": 38175,
+      "reference_end_ms": 40150,
+      "delta_ms": 952.0
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 1,
+      "predicted_start": 40.487,
+      "predicted_end": 41.917,
+      "reference_start_ms": 40305,
+      "reference_end_ms": 40855,
+      "delta_ms": 182.0
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 2,
+      "predicted_start": 41.947,
+      "predicted_end": 42.838,
+      "reference_start_ms": 40855,
+      "reference_end_ms": 42765,
+      "delta_ms": 1092.0
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 3,
+      "predicted_start": 42.868,
+      "predicted_end": 43.938,
+      "reference_start_ms": 42765,
+      "reference_end_ms": 43945,
+      "delta_ms": 103.0
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 4,
+      "predicted_start": 43.968,
+      "predicted_end": 46.078,
+      "reference_start_ms": 43945,
+      "reference_end_ms": 45125,
+      "delta_ms": 23.0
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 5,
+      "predicted_start": 46.108,
+      "predicted_end": 47.839,
+      "reference_start_ms": 45125,
+      "reference_end_ms": 47095,
+      "delta_ms": 983.0
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 6,
+      "predicted_start": 47.869,
+      "predicted_end": 49.529,
+      "reference_start_ms": 47095,
+      "reference_end_ms": 49620,
+      "delta_ms": 774.0
+    }
+  ]
+}

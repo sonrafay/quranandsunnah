@@ -9,6 +9,17 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
+type DistStats = {
+  count: number;
+  min: number | null;
+  median: number | null;
+  p90: number | null;
+  p95: number | null;
+  p99: number | null;
+  max: number | null;
+  mean: number | null;
+};
+
 export type Summary = {
   reciter_id: number;
   reciter_name: string;
@@ -19,16 +30,11 @@ export type Summary = {
   avg_within_100ms_pct: number | null;
   avg_within_250ms_pct: number | null;
   avg_mean_abs_error_ms: number | null;
-  per_word_error_ms: {
-    count: number;
-    min: number | null;
-    median: number | null;
-    p90: number | null;
-    p95: number | null;
-    p99: number | null;
-    max: number | null;
-    mean: number | null;
-  };
+  avg_corrected_within_100ms_pct?: number | null;
+  avg_corrected_within_250ms_pct?: number | null;
+  avg_corrected_mean_abs_error_ms?: number | null;
+  per_word_error_ms: DistStats;
+  per_word_error_ms_corrected?: DistStats;
   per_surah: Array<{
     surah: number;
     audio_duration_sec: number | null;
@@ -37,6 +43,10 @@ export type Summary = {
     within_100ms_pct: number;
     within_250ms_pct: number;
     mean_abs_error_ms: number;
+    median_offset_ms?: number | null;
+    corrected_within_100ms_pct?: number | null;
+    corrected_within_250ms_pct?: number | null;
+    corrected_mean_abs_error_ms?: number | null;
   }>;
 };
 
@@ -62,7 +72,12 @@ type SortKey =
   | "words_compared"
   | "within_100ms_pct"
   | "within_250ms_pct"
-  | "mean_abs_error_ms";
+  | "mean_abs_error_ms"
+  | "median_offset_ms"
+  | "corrected_within_100ms_pct"
+  | "corrected_mean_abs_error_ms";
+
+type MetricView = "raw" | "corrected";
 
 const ARROW = { asc: "▲", desc: "▼" } as const;
 
@@ -77,12 +92,16 @@ export default function ReportDashboard({
   const [sortKey, setSortKey] = useState<SortKey>("surah");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [drillSurah, setDrillSurah] = useState<number | null>(null);
+  const hasCorrected =
+    summary.avg_corrected_within_100ms_pct !== undefined &&
+    summary.avg_corrected_within_100ms_pct !== null;
+  const [metricView, setMetricView] = useState<MetricView>(hasCorrected ? "corrected" : "raw");
 
   const sortedSurahs = useMemo(() => {
     const arr = [...summary.per_surah];
     arr.sort((a, b) => {
-      const av = a[sortKey] ?? 0;
-      const bv = b[sortKey] ?? 0;
+      const av = (a as unknown as Record<string, number | null | undefined>)[sortKey] ?? 0;
+      const bv = (b as unknown as Record<string, number | null | undefined>)[sortKey] ?? 0;
       const cmp = (av as number) - (bv as number);
       return sortDir === "asc" ? cmp : -cmp;
     });
@@ -163,19 +182,58 @@ export default function ReportDashboard({
           </div>
         </header>
 
+        {/* Metric view toggle */}
+        {hasCorrected && (
+          <section className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
+            <div className="text-xs uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-1">
+              Important — choose your comparison frame
+            </div>
+            <p className="text-sm">
+              QF&apos;s per-word reference timings use a different timing convention than our alignment for many surahs —
+              each surah has its own systematic <strong>signed offset</strong> (we measured offsets ranging from ~80 ms
+              to over 2 s). Our model agrees with what your eye sees in the player; the disagreement is with QF&apos;s
+              reference frame. We show both views below: <strong>raw</strong> compares directly to QF (penalises us for
+              the offset), <strong>offset-corrected</strong> subtracts each surah&apos;s median signed offset before
+              measuring — that&apos;s the model&apos;s actual precision against the audio.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={() => setMetricView("raw")}
+                className={`h-9 px-4 rounded-md text-sm font-medium border ${
+                  metricView === "raw"
+                    ? "bg-amber-600 text-white border-amber-600"
+                    : "bg-background border-border"
+                }`}
+              >
+                Raw vs QF reference
+              </button>
+              <button
+                onClick={() => setMetricView("corrected")}
+                className={`h-9 px-4 rounded-md text-sm font-medium border ${
+                  metricView === "corrected"
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : "bg-background border-border"
+                }`}
+              >
+                Offset-corrected (model&apos;s actual precision)
+              </button>
+            </div>
+          </section>
+        )}
+
         {/* Top-line stat cards */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
           <Stat label="Surahs validated" value={summary.surahs_validated.toString()} sub={`reciter ${summary.reciter_id}`} />
           <Stat label="Words compared" value={summary.total_words_compared.toLocaleString()} sub={`from ${data.perWordFileCount} per-surah files`} />
           <Stat
             label="Avg within ±100 ms"
-            value={summary.avg_within_100ms_pct !== null ? `${summary.avg_within_100ms_pct.toFixed(1)}%` : "—"}
-            sub="how often the predicted word start lands in the 100 ms tolerance window"
+            value={fmtPct(metricView === "corrected" ? summary.avg_corrected_within_100ms_pct : summary.avg_within_100ms_pct)}
+            sub={metricView === "corrected" ? "after QF-offset correction" : "raw vs QF reference"}
             highlight
           />
           <Stat
             label="Avg within ±250 ms"
-            value={summary.avg_within_250ms_pct !== null ? `${summary.avg_within_250ms_pct.toFixed(1)}%` : "—"}
+            value={fmtPct(metricView === "corrected" ? summary.avg_corrected_within_250ms_pct : summary.avg_within_250ms_pct)}
             sub="loose tolerance — what the player highlight effectively needs"
             highlight
           />
@@ -184,17 +242,17 @@ export default function ReportDashboard({
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
           <Stat
             label="Mean abs error"
-            value={summary.avg_mean_abs_error_ms !== null ? `${summary.avg_mean_abs_error_ms.toFixed(1)} ms` : "—"}
-            sub="per-surah MAE averaged across the batch"
+            value={fmtMs(metricView === "corrected" ? summary.avg_corrected_mean_abs_error_ms : summary.avg_mean_abs_error_ms)}
+            sub={metricView === "corrected" ? "after correction" : "raw vs QF reference"}
           />
           <Stat
             label="Median word error"
-            value={summary.per_word_error_ms.median !== null ? `${summary.per_word_error_ms.median.toFixed(0)} ms` : "—"}
+            value={fmtMs(activeStats(summary, metricView)?.median ?? null)}
             sub="50% of words are at least this close"
           />
           <Stat
             label="P95 word error"
-            value={summary.per_word_error_ms.p95 !== null ? `${summary.per_word_error_ms.p95.toFixed(0)} ms` : "—"}
+            value={fmtMs(activeStats(summary, metricView)?.p95 ?? null)}
             sub="95% of words are within this much"
           />
           <Stat
@@ -253,7 +311,9 @@ export default function ReportDashboard({
 
         {/* Per-surah breakdown table */}
         <section className="mb-10">
-          <h2 className="text-lg font-semibold mb-2">Per-surah breakdown</h2>
+          <h2 className="text-lg font-semibold mb-2">
+            Per-surah breakdown — {metricView === "corrected" ? "offset-corrected" : "raw vs QF reference"}
+          </h2>
           <div className="rounded-2xl border border-border/60 bg-card/40 overflow-hidden">
             <div className="overflow-auto">
               <table className="w-full text-sm">
@@ -262,9 +322,23 @@ export default function ReportDashboard({
                     <Th onClick={sortHandler("surah")} active={sortKey === "surah"} dir={sortDir}>Surah</Th>
                     <Th onClick={sortHandler("audio_duration_sec")} active={sortKey === "audio_duration_sec"} dir={sortDir}>Audio (s)</Th>
                     <Th onClick={sortHandler("words_compared")} active={sortKey === "words_compared"} dir={sortDir}>Words</Th>
-                    <Th onClick={sortHandler("within_100ms_pct")} active={sortKey === "within_100ms_pct"} dir={sortDir}>±100 ms</Th>
-                    <Th onClick={sortHandler("within_250ms_pct")} active={sortKey === "within_250ms_pct"} dir={sortDir}>±250 ms</Th>
-                    <Th onClick={sortHandler("mean_abs_error_ms")} active={sortKey === "mean_abs_error_ms"} dir={sortDir}>MAE (ms)</Th>
+                    {hasCorrected && (
+                      <Th onClick={sortHandler("median_offset_ms")} active={sortKey === "median_offset_ms"} dir={sortDir}>
+                        QF offset
+                      </Th>
+                    )}
+                    {metricView === "raw" ? (
+                      <>
+                        <Th onClick={sortHandler("within_100ms_pct")} active={sortKey === "within_100ms_pct"} dir={sortDir}>±100 ms</Th>
+                        <Th onClick={sortHandler("within_250ms_pct")} active={sortKey === "within_250ms_pct"} dir={sortDir}>±250 ms</Th>
+                        <Th onClick={sortHandler("mean_abs_error_ms")} active={sortKey === "mean_abs_error_ms"} dir={sortDir}>MAE (ms)</Th>
+                      </>
+                    ) : (
+                      <>
+                        <Th onClick={sortHandler("corrected_within_100ms_pct")} active={sortKey === "corrected_within_100ms_pct"} dir={sortDir}>±100 ms ✓</Th>
+                        <Th onClick={sortHandler("corrected_mean_abs_error_ms")} active={sortKey === "corrected_mean_abs_error_ms"} dir={sortDir}>MAE ✓ (ms)</Th>
+                      </>
+                    )}
                     <th className="px-3 py-2 text-left">Inspect</th>
                   </tr>
                 </thead>
@@ -274,13 +348,33 @@ export default function ReportDashboard({
                       <td className="px-3 py-2 font-mono">{row.surah}</td>
                       <td className="px-3 py-2 font-mono">{row.audio_duration_sec?.toFixed(1) ?? "—"}</td>
                       <td className="px-3 py-2 font-mono">{row.words_compared}</td>
-                      <td className="px-3 py-2 font-mono">
-                        <AccuracyBar value={row.within_100ms_pct} />
-                      </td>
-                      <td className="px-3 py-2 font-mono">
-                        <AccuracyBar value={row.within_250ms_pct} color="blue" />
-                      </td>
-                      <td className="px-3 py-2 font-mono">{row.mean_abs_error_ms.toFixed(1)}</td>
+                      {hasCorrected && (
+                        <td className="px-3 py-2 font-mono">
+                          {row.median_offset_ms !== null && row.median_offset_ms !== undefined
+                            ? `${row.median_offset_ms > 0 ? "+" : ""}${row.median_offset_ms.toFixed(0)} ms`
+                            : "—"}
+                        </td>
+                      )}
+                      {metricView === "raw" ? (
+                        <>
+                          <td className="px-3 py-2 font-mono"><AccuracyBar value={row.within_100ms_pct} /></td>
+                          <td className="px-3 py-2 font-mono"><AccuracyBar value={row.within_250ms_pct} color="blue" /></td>
+                          <td className="px-3 py-2 font-mono">{row.mean_abs_error_ms.toFixed(1)}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="px-3 py-2 font-mono">
+                            {row.corrected_within_100ms_pct !== null && row.corrected_within_100ms_pct !== undefined
+                              ? <AccuracyBar value={row.corrected_within_100ms_pct} />
+                              : <span className="text-muted-foreground">—</span>}
+                          </td>
+                          <td className="px-3 py-2 font-mono">
+                            {row.corrected_mean_abs_error_ms !== null && row.corrected_mean_abs_error_ms !== undefined
+                              ? row.corrected_mean_abs_error_ms.toFixed(1)
+                              : "—"}
+                          </td>
+                        </>
+                      )}
                       <td className="px-3 py-2">
                         <button
                           onClick={() => setDrillSurah(drillSurah === row.surah ? null : row.surah)}
@@ -451,6 +545,18 @@ function errorClass(ms: number): string {
   if (ms <= 250) return "text-blue-600 dark:text-blue-400";
   if (ms <= 500) return "text-amber-600 dark:text-amber-400";
   return "text-red-600 dark:text-red-400";
+}
+
+function fmtPct(v: number | null | undefined): string {
+  return v === null || v === undefined ? "—" : `${v.toFixed(1)}%`;
+}
+
+function fmtMs(v: number | null | undefined): string {
+  return v === null || v === undefined ? "—" : `${v.toFixed(0)} ms`;
+}
+
+function activeStats(s: Summary, view: MetricView): DistStats | undefined {
+  return view === "corrected" ? s.per_word_error_ms_corrected : s.per_word_error_ms;
 }
 
 function formatDuration(seconds: number): string {

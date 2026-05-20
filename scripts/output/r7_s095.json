@@ -1,0 +1,252 @@
+{
+  "audioUrl": "https://download.quranicaudio.com/qdc/mishari_al_afasy/murattal/95.mp3",
+  "surah": 95,
+  "wordSegments": [
+    {
+      "verseNum": 1,
+      "wordIndex": 1,
+      "start": 0.12,
+      "end": 1.05
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 2,
+      "start": 1.08,
+      "end": 4.851
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 1,
+      "start": 4.881,
+      "end": 5.671
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 2,
+      "start": 5.701,
+      "end": 8.972
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 1,
+      "start": 9.002,
+      "end": 9.812
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 2,
+      "start": 9.842,
+      "end": 10.583
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 3,
+      "start": 10.583,
+      "end": 13.793
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 1,
+      "start": 13.823,
+      "end": 14.374
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 2,
+      "start": 14.404,
+      "end": 15.134
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 3,
+      "start": 15.164,
+      "end": 17.114
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 4,
+      "start": 17.144,
+      "end": 18.815
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 5,
+      "start": 18.845,
+      "end": 19.535
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 6,
+      "start": 19.565,
+      "end": 22.516
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 1,
+      "start": 22.546,
+      "end": 23.876
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 2,
+      "start": 23.906,
+      "end": 24.996
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 3,
+      "start": 25.026,
+      "end": 25.856
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 4,
+      "start": 25.886,
+      "end": 29.457
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 1,
+      "start": 29.487,
+      "end": 30.117
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 2,
+      "start": 30.147,
+      "end": 31.058
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 3,
+      "start": 31.088,
+      "end": 32.078
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 4,
+      "start": 32.108,
+      "end": 32.928
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 5,
+      "start": 32.928,
+      "end": 34.318
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 6,
+      "start": 34.348,
+      "end": 35.179
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 7,
+      "start": 35.209,
+      "end": 35.899
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 8,
+      "start": 35.929,
+      "end": 36.459
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 9,
+      "start": 36.489,
+      "end": 40.1
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 1,
+      "start": 40.13,
+      "end": 40.71
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 2,
+      "start": 40.71,
+      "end": 41.9
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 3,
+      "start": 41.93,
+      "end": 42.5
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 4,
+      "start": 42.53,
+      "end": 46.061
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 1,
+      "start": 46.091,
+      "end": 46.982
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 2,
+      "start": 47.012,
+      "end": 47.962
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 3,
+      "start": 47.992,
+      "end": 49.052
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 4,
+      "start": 49.052,
+      "end": 53.773
+    }
+  ],
+  "segments": [
+    {
+      "verse": 1,
+      "start": 0.12,
+      "end": 4.851
+    },
+    {
+      "verse": 2,
+      "start": 4.881,
+      "end": 8.972
+    },
+    {
+      "verse": 3,
+      "start": 9.002,
+      "end": 13.793
+    },
+    {
+      "verse": 4,
+      "start": 13.823,
+      "end": 22.516
+    },
+    {
+      "verse": 5,
+      "start": 22.546,
+      "end": 29.457
+    },
+    {
+      "verse": 6,
+      "start": 29.487,
+      "end": 40.1
+    },
+    {
+      "verse": 7,
+      "start": 40.13,
+      "end": 46.061
+    },
+    {
+      "verse": 8,
+      "start": 46.091,
+      "end": 53.773
+    }
+  ]
+}

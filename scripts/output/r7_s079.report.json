@@ -1,0 +1,6 @@
+{
+  "words_compared": 179,
+  "within_100ms_pct": 21.8,
+  "within_250ms_pct": 40.2,
+  "mean_abs_error_ms": 369.9
+}

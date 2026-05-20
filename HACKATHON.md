@@ -339,6 +339,33 @@ npm run dev
 | **mean absolute error (MAE)** | Average per-word `|predicted - reference|` in ms. Single-number summary. |
 | **median / p90 / p95 / p99 / max** | Percentiles of per-word error across the entire batch. p95 is the honest "worst-case typical" number — only 5% of words are worse. |
 | **alignment seconds** | Wall-clock CPU time the alignment script took, per surah. Roughly real-time on CPU. |
+| **QF offset (per-surah median signed delta)** | The systematic shift between our predicted word starts and QF's reference word starts for that surah. Used to derive the offset-corrected metrics. |
+| **offset-corrected ±100 / ±250 / MAE** | Same accuracy metrics, but computed after subtracting each surah's median signed offset from every per-word delta. Removes the surah-specific QF convention bias and reveals the model's intrinsic precision. |
+
+### Why two sets of numbers (raw vs offset-corrected)
+
+When we first ran the batch we saw something puzzling: visually the alignment was
+near-perfect (the highlight on `/quran/95` lands on each word as it's said), but
+the raw accuracy numbers were modest (typical `~30 % within ±100 ms`). Inspecting
+the per-word JSONs surfaced the explanation — **every surah has its own
+systematic signed offset** between our predicted word starts and QF's
+reference word starts. We measured surah-by-surah offsets ranging from
+`+88 ms` to `+2625 ms`.
+
+That's not random noise — it's a consistent direction-and-magnitude shift per
+surah. The most likely cause is a convention mismatch: QF appears to mark
+each word's "start" at the end of the previous word's slot (so all inter-word
+silence is absorbed into the previous word), while we mark "start" at the
+audible onset of the word itself. For surahs with long pauses (Mishari's
+deliberate tajwid style on, e.g., An-Naba) the gap is large; for tight
+recitation it's small.
+
+The dashboard shows both views via a toggle so judges can see (a) what raw
+agreement with QF's reference looks like, and (b) what the model's actual
+precision is once that systematic surah-level shift is normalised out.
+The **offset-corrected** numbers are the honest indicator of how well the
+highlight tracks the audio you actually hear. We don't hide the raw view —
+it's there to make the data transparent.
 
 ### Underlying files committed to the repo
 
