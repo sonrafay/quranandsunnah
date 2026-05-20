@@ -189,6 +189,14 @@ export default function HackathonHelperClient({ initialDemos }: Props) {
             <code className="text-foreground">src/app/hackathon-helper/</code>, and{" "}
             <code className="text-foreground">src/app/api/hackathon-align/</code>.
           </p>
+          <div className="mt-3">
+            <a
+              href="/hackathon-helper/report"
+              className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20"
+            >
+              📊 View validation report dashboard →
+            </a>
+          </div>
         </header>
 
         <section className="rounded-2xl border border-border/60 bg-card/40 p-6 mb-10">
