@@ -1,0 +1,194 @@
+{
+  "audioUrl": "/demo/hackathondemo-yasser-al-dossary/109.mp3",
+  "surah": 109,
+  "wordSegments": [
+    {
+      "verseNum": 1,
+      "wordIndex": 1,
+      "start": 0.36,
+      "end": 0.691
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 2,
+      "start": 0.721,
+      "end": 1.852
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 3,
+      "start": 1.882,
+      "end": 3.714
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 1,
+      "start": 3.744,
+      "end": 4.204
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 2,
+      "start": 4.204,
+      "end": 4.935
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 3,
+      "start": 4.965,
+      "end": 5.345
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 4,
+      "start": 5.345,
+      "end": 6.897
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 1,
+      "start": 6.927,
+      "end": 8.108
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 2,
+      "start": 8.108,
+      "end": 9.239
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 3,
+      "start": 9.269,
+      "end": 10.48
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 4,
+      "start": 10.51,
+      "end": 11.751
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 5,
+      "start": 11.751,
+      "end": 12.141
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 1,
+      "start": 12.171,
+      "end": 13.092
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 2,
+      "start": 13.092,
+      "end": 13.283
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 3,
+      "start": 13.313,
+      "end": 14.904
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 4,
+      "start": 14.934,
+      "end": 15.304
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 5,
+      "start": 15.334,
+      "end": 16.486
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 1,
+      "start": 16.516,
+      "end": 17.577
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 2,
+      "start": 17.577,
+      "end": 18.107
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 3,
+      "start": 18.137,
+      "end": 19.348
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 4,
+      "start": 19.378,
+      "end": 20.619
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 5,
+      "start": 20.619,
+      "end": 21.09
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 1,
+      "start": 21.12,
+      "end": 21.811
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 2,
+      "start": 21.841,
+      "end": 23.092
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 3,
+      "start": 23.122,
+      "end": 23.852
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 4,
+      "start": 23.882,
+      "end": 25.444
+    }
+  ],
+  "segments": [
+    {
+      "verse": 1,
+      "start": 0.36,
+      "end": 3.714
+    },
+    {
+      "verse": 2,
+      "start": 3.744,
+      "end": 6.897
+    },
+    {
+      "verse": 3,
+      "start": 6.927,
+      "end": 12.141
+    },
+    {
+      "verse": 4,
+      "start": 12.171,
+      "end": 16.486
+    },
+    {
+      "verse": 5,
+      "start": 16.516,
+      "end": 21.09
+    },
+    {
+      "verse": 6,
+      "start": 21.12,
+      "end": 25.444
+    }
+  ]
+}

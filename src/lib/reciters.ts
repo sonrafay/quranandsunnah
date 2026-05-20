@@ -8,8 +8,11 @@ export type ReciterVariant = "beta" | "mujawwad" | "muallim" | "kids-repeat" | n
  * Audio source type for reciters:
  * - "quran_foundation": Uses Quran.Foundation recitations API (full support)
  * - "legacy_qdc": Uses legacy QDC direct URLs (beta reciters with limited API support)
+ * - "local_demo": Loads audio + word timings from a committed JSON under
+ *   public/demo/{slug}/{surahPadded}.json. Produced by scripts/align-audio.py.
+ *   Hackathon-only path; bypasses all QF/QDC fetches.
  */
-export type ReciterSourceType = "quran_foundation" | "legacy_qdc";
+export type ReciterSourceType = "quran_foundation" | "legacy_qdc" | "local_demo";
 
 export type ReciterConfig = {
   id: number;              // Stable internal ID for API calls
@@ -66,6 +69,12 @@ export const RECITERS: ReciterConfig[] = [
 
   // Beta reciter
   { id: 97, name: "Yasser Ad Dussary", displayName: "Yasser Ad Dussary - beta", variant: "beta", sourceType: "legacy_qdc", slug: "yasser_ad_dossari", qdcSlug: "yasser_ad-dussary" },
+
+  // Hackathon demo entries — forced-alignment output committed under public/demo/{slug}/{surahPadded}.json
+  { id: 9001, name: "Demo Aligner", displayName: "Demo — Mishari (Forced Alignment)", variant: null, sourceType: "local_demo", slug: "afasy-validation" },
+  { id: 9002, name: "Muhammad Al-Luhaidan", displayName: "Demo — Muhammad Al-Luhaidan", variant: null, sourceType: "local_demo", slug: "muhammad-al-luhaidan" },
+  { id: 9003, name: "Ibi Idris", displayName: "Demo — Ibi Idris", variant: null, sourceType: "local_demo", slug: "ibi-idris" },
+  { id: 9004, name: "Yasser Al-Dosari (beta test)", displayName: "Demo — Yasser Al-Dosari (beta test)", variant: null, sourceType: "local_demo", slug: "yasser-al-dosari-beta" },
 ];
 
 /**

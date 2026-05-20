@@ -1,4 +1,6 @@
 // src/app/quran/[surah]/page.tsx
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { qfGet } from "@/lib/server/qf";
@@ -11,6 +13,8 @@ import QuranRecentTracker from "@/components/quran/QuranRecentTracker";
 import SurahSideNav from "@/components/quran/SurahSideNav";
 import SurahPicker from "@/components/quran/SurahPicker";
 import { getCuratedReciters, resolveReciterId, getReciterById } from "@/lib/reciters";
+import { loadDemoRegistry } from "@/lib/demoRegistry.server";
+import type { DemoRegistryEntry } from "@/lib/demoRegistry";
 
 
 // ✅ Mount the compact left notes box (client-only)
@@ -76,15 +80,53 @@ async function getChapterMeta(id: string) {
 }
 
 
-// Use curated reciter list (matches Quran.com exactly)
-function getReciters(): Reciter[] {
-  return getCuratedReciters();
+// Curated reciter list, merged with runtime demo registry entries (helper-generated)
+function getReciters(demoRegistry: { demos: DemoRegistryEntry[] }): Reciter[] {
+  const curated = getCuratedReciters();
+  const demoEntries: Reciter[] = demoRegistry.demos.map((d) => ({ id: d.id, name: d.displayName }));
+  // Avoid duplicate IDs (e.g., if a registry entry collides with the curated 9001-9004 demos)
+  const seen = new Set(curated.map((r) => r.id));
+  const merged = [...curated];
+  for (const d of demoEntries) {
+    if (!seen.has(d.id)) {
+      merged.push(d);
+      seen.add(d.id);
+    }
+  }
+  return merged;
+}
+
+async function loadLocalDemoAudio(
+  slug: string,
+  surah: string,
+): Promise<{ url: string; segments: Segment[]; wordSegments: WordSegment[] } | null> {
+  try {
+    const surahPadded = String(surah).padStart(3, "0");
+    const filePath = path.join(process.cwd(), "public", "demo", slug, `${surahPadded}.json`);
+    const raw = await fs.readFile(filePath, "utf-8");
+    const json = JSON.parse(raw) as {
+      audioUrl?: string;
+      wordSegments?: WordSegment[];
+      segments?: Array<{ verse: number; start: number; end: number }>;
+    };
+    if (!json.audioUrl || !json.segments?.length) {
+      console.warn("[loadLocalDemoAudio] JSON missing audioUrl/segments", filePath);
+      return null;
+    }
+    const segments: Segment[] = json.segments.map((s) => ({ n: s.verse, start: s.start, end: s.end }));
+    const wordSegments: WordSegment[] = (json.wordSegments ?? []).slice().sort((a, b) => a.start - b.start);
+    return { url: json.audioUrl, segments, wordSegments };
+  } catch (err) {
+    console.error("[loadLocalDemoAudio] failed", slug, surah, err);
+    return null;
+  }
 }
 
 // Single full-surah audio + timings (segments)
 async function getSurahAudio(
   reciterId: number,
-  surah: string
+  surah: string,
+  demoRegistry: { demos: DemoRegistryEntry[] },
 ): Promise<{ url: string; segments: Segment[]; wordSegments: WordSegment[]; duration?: number } | null> {
   const reciter = getReciterById(reciterId);
 
@@ -94,6 +136,17 @@ async function getSurahAudio(
   // This provides working audio playback with auto-advance between verses.
   if (reciter?.sourceType === "legacy_qdc") {
     return null; // Fall back to per-verse mode (audioItems will be populated in fetchVerses)
+  }
+
+  // Hackathon demo reciter (curated entries 9001-9099): load forced-alignment JSON
+  if (reciter?.sourceType === "local_demo" && reciter.slug) {
+    return loadLocalDemoAudio(reciter.slug, surah);
+  }
+
+  // Hackathon helper runtime demo (registry, IDs 9100+): same load path via slug
+  const registryEntry = demoRegistry.demos.find((d) => d.id === reciterId);
+  if (registryEntry) {
+    return loadLocalDemoAudio(registryEntry.slug, surah);
   }
 
   try {
@@ -412,8 +465,9 @@ export default async function SurahPage({
 }) {
   const surah = params.surah;
 
-  // Curated reciter list (synchronous, no API call needed)
-  const reciters = getReciters();
+  // Curated reciter list + runtime demo registry (hackathon helper)
+  const demoRegistry = await loadDemoRegistry();
+  const reciters = getReciters(demoRegistry);
   const meta = await getChapterMeta(surah);
 
   // Translation IDs come from URL params (synced from user settings via SurahContentWrapper)
@@ -437,7 +491,7 @@ export default async function SurahPage({
       reciterId: selectedR,
       wordTranslationIsoCode: wordTranslationIsoCode || undefined,
     }),
-    getSurahAudio(selectedR, surah),
+    getSurahAudio(selectedR, surah, demoRegistry),
   ]);
 
   const perAyahWordSegments = surahAudio ? {} : await getPerAyahWordSegments(selectedR, surah);
@@ -458,6 +512,14 @@ export default async function SurahPage({
 
   return (
     <>
+      {/* Inline demo-registry JSON so AudioPlayerBar (client) can resolve dynamic
+          local_demo reciter IDs without an extra fetch on reciter-change. */}
+      <script
+        id="__demo-registry__"
+        type="application/json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(demoRegistry) }}
+      />
+
       <SurahSideNav current={data.chapter} />
 
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-32 pb-8 sm:pt-28 sm:pb-12">

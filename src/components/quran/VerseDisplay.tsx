@@ -72,11 +72,11 @@ export default function VerseDisplay({
     fontVariant === "indopak" ? "font-quran-indopak" : "font-quran"; // Default Uthmani
 
   // Word-by-word settings (unified language, separate toggles)
-  // Only show if language is selected AND toggle is on
+  // Only controls whether the translation popup appears on hover. Hover styling
+  // and audio-driven highlight are always available when verse.words is present.
   const hasWordByWordLanguage = settings.wordByWordLanguageId !== null;
   const showWordTranslation = hasWordByWordLanguage && settings.showWordByWordTranslation;
   const showWordTransliteration = hasWordByWordLanguage && settings.showWordByWordTransliteration;
-  const wordByWordEnabled = showWordTranslation || showWordTransliteration;
   const renderedWordCount = useMemo(
     () => (verse.words ? verse.words.filter((w) => w.char_type_name !== "end").length : 0),
     [verse.words]
@@ -139,8 +139,11 @@ export default function VerseDisplay({
       </div>
 
       {/* Arabic - Text-based or Glyph-based rendering */}
-      {isTextBased && wordByWordEnabled && verse.words ? (
-        // Text-based with word-by-word hover support
+      {/* Always render per-word when verse.words is available so hover + audio
+          highlight work regardless of whether word-by-word translation is on.
+          The translation popup itself still respects the WBW settings. */}
+      {isTextBased && verse.words ? (
+        // Text-based with per-word DOM (hover + highlight always available)
         <div
           className={cn(
             quranFontClass,
@@ -270,8 +273,9 @@ export default function VerseDisplay({
               matchesAyah &&
               activeReciterWord?.wordIndex === wordIndex;
 
-            // If word-by-word is enabled and this is not an end marker, wrap with tooltip
-            if (wordByWordEnabled && !isEndMarker) {
+            // Always wrap non-end-marker words with WordHoverTooltip so hover +
+            // audio highlight work regardless of WBW translation toggle.
+            if (!isEndMarker) {
               return (
                 <WordHoverTooltip
                   key={`${verse.key}-w${idx}`}

@@ -1,0 +1,193 @@
+{
+  "audioUrl": "/demo/ibi-idris/107.mp3",
+  "surah": 107,
+  "wordSegments": [
+    {
+      "verseNum": 1,
+      "wordIndex": 1,
+      "start": 0.861,
+      "end": 1.131
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 2,
+      "start": 1.161,
+      "end": 2.041
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 3,
+      "start": 2.041,
+      "end": 3.212
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 4,
+      "start": 3.242,
+      "end": 5.534
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 1,
+      "start": 5.564,
+      "end": 6.694
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 2,
+      "start": 6.724,
+      "end": 7.585
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 3,
+      "start": 7.585,
+      "end": 8.395
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 4,
+      "start": 8.425,
+      "end": 11.017
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 1,
+      "start": 11.047,
+      "end": 11.737
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 2,
+      "start": 11.767,
+      "end": 12.658
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 3,
+      "start": 12.688,
+      "end": 13.348
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 4,
+      "start": 13.348,
+      "end": 14.219
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 5,
+      "start": 14.249,
+      "end": 17.361
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 1,
+      "start": 17.391,
+      "end": 18.492
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 2,
+      "start": 18.492,
+      "end": 21.484
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 1,
+      "start": 21.514,
+      "end": 22.724
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 2,
+      "start": 22.754,
+      "end": 23.205
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 3,
+      "start": 23.235,
+      "end": 24.065
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 4,
+      "start": 24.095,
+      "end": 25.506
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 5,
+      "start": 25.536,
+      "end": 27.748
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 1,
+      "start": 27.778,
+      "end": 29.048
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 2,
+      "start": 29.078,
+      "end": 29.489
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 3,
+      "start": 29.519,
+      "end": 34.052
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 1,
+      "start": 34.082,
+      "end": 35.713
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 2,
+      "start": 35.743,
+      "end": 38.244
+    }
+  ],
+  "segments": [
+    {
+      "verse": 1,
+      "start": 0.861,
+      "end": 5.534
+    },
+    {
+      "verse": 2,
+      "start": 5.564,
+      "end": 11.017
+    },
+    {
+      "verse": 3,
+      "start": 11.047,
+      "end": 17.361
+    },
+    {
+      "verse": 4,
+      "start": 17.391,
+      "end": 21.484
+    },
+    {
+      "verse": 5,
+      "start": 21.514,
+      "end": 27.748
+    },
+    {
+      "verse": 6,
+      "start": 27.778,
+      "end": 34.052
+    },
+    {
+      "verse": 7,
+      "start": 34.082,
+      "end": 38.244
+    }
+  ]
+}

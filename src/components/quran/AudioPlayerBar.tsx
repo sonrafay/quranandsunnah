@@ -9,6 +9,21 @@ import {
   emitWordHighlight,
 } from "@/lib/wordAudio";
 import ReciterPicker, { Reciter } from "@/components/quran/ReciterPicker";
+import { getReciterById } from "@/lib/reciters";
+import { findDemoById, getClientDemoRegistry } from "@/lib/demoRegistry";
+
+/**
+ * Resolve a slug for a local_demo audio. Looks at the curated RECITERS first
+ * (entries 9001-9099) and falls back to the runtime demo registry inlined by
+ * the surah page (IDs 9100+). Returns null when the ID is not a demo entry.
+ */
+function resolveDemoSlug(reciterId: number): string | null {
+  const curated = getReciterById(reciterId);
+  if (curated?.sourceType === "local_demo" && curated.slug) return curated.slug;
+  const registry = getClientDemoRegistry();
+  const dynamic = findDemoById(registry, reciterId);
+  return dynamic?.slug ?? null;
+}
 
 export type Segment = { n: number; start: number; end: number };
 export type AudioItem = { n: number; key: string; url: string };
@@ -288,6 +303,34 @@ export default function AudioPlayerBar(props: Props) {
 
     if (!nextItems.length) return null;
     return { items: nextItems, wordSegmentsByAyah: nextByAyah };
+  }, [props.surah]);
+
+  // Hackathon demo: load forced-alignment JSON committed under public/demo/{slug}/{surahPadded}.json
+  const fetchLocalDemoData = useCallback(async (reciterId: number) => {
+    const slug = resolveDemoSlug(reciterId);
+    if (!slug) return null;
+    const surahPadded = String(props.surah).padStart(3, "0");
+    const url = `/demo/${slug}/${surahPadded}.json`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = (await res.json()) as {
+        audioUrl?: string;
+        wordSegments?: WordSegment[];
+        segments?: Array<{ verse: number; start: number; end: number }>;
+      };
+      const trackUrl = data.audioUrl;
+      if (!trackUrl || !data.segments?.length) return null;
+      const segments: Segment[] = data.segments
+        .map((s) => ({ n: s.verse, start: s.start, end: s.end }))
+        .sort((a, b) => a.start - b.start);
+      const wordSegments: WordSegment[] = (data.wordSegments ?? [])
+        .slice()
+        .sort((a, b) => a.start - b.start);
+      return { trackUrl, segments, wordSegments };
+    } catch {
+      return null;
+    }
   }, [props.surah]);
 
   useEffect(() => {
@@ -668,6 +711,7 @@ export default function AudioPlayerBar(props: Props) {
       const detail = (e as CustomEvent).detail as { id?: number };
       if (typeof detail?.id !== "number") return;
       if (detail.id === activeReciterId) return;
+      const reciterIdNum: number = detail.id;
 
       const a = audioRef.current;
       const wasPlaying = playing;
@@ -709,8 +753,16 @@ export default function AudioPlayerBar(props: Props) {
       resumeAppliedRef.current = false;
 
       (async () => {
+        const nextReciter = getReciterById(reciterIdNum);
+        // local_demo path covers both curated demo entries and the dynamic
+        // hackathon-helper registry (IDs 9100+, see lib/demoRegistry.ts).
+        const isLocalDemo =
+          nextReciter?.sourceType === "local_demo" || resolveDemoSlug(reciterIdNum) !== null;
+
         if (isSingle) {
-          const chapter = await fetchChapterRecitation(detail.id);
+          const chapter = isLocalDemo
+            ? await fetchLocalDemoData(reciterIdNum)
+            : await fetchChapterRecitation(reciterIdNum);
           if (!chapter) return;
           setOverrideTrackUrl(chapter.trackUrl);
           setOverrideSegments(chapter.segments);
@@ -720,7 +772,22 @@ export default function AudioPlayerBar(props: Props) {
             a.load();
           }
         } else {
-          const perAyah = await fetchPerAyahData(detail.id);
+          // local_demo can't operate in perAyah mode (it ships one full-chapter track).
+          // Fall back to fetching like single mode and overriding to single-shape state.
+          if (isLocalDemo) {
+            const chapter = await fetchLocalDemoData(reciterIdNum);
+            if (!chapter) return;
+            setOverrideTrackUrl(chapter.trackUrl);
+            setOverrideSegments(chapter.segments);
+            setOverrideWordSegments(chapter.wordSegments);
+            if (a) {
+              a.src = chapter.trackUrl;
+              a.load();
+            }
+            setActiveReciterId(reciterIdNum);
+            return;
+          }
+          const perAyah = await fetchPerAyahData(reciterIdNum);
           if (!perAyah) return;
           setOverrideItems(perAyah.items);
           setOverrideWordSegmentsByAyah(perAyah.wordSegmentsByAyah);
@@ -737,7 +804,7 @@ export default function AudioPlayerBar(props: Props) {
             }
           }
         }
-        setActiveReciterId(detail.id);
+        setActiveReciterId(reciterIdNum);
       })();
     };
 
@@ -751,6 +818,7 @@ export default function AudioPlayerBar(props: Props) {
     clearWordHighlights,
     fetchChapterRecitation,
     fetchPerAyahData,
+    fetchLocalDemoData,
   ]);
 
   useEffect(() => {
