@@ -1,0 +1,107 @@
+{
+  "audioUrl": "https://download.quranicaudio.com/qdc/mishari_al_afasy/murattal/103.mp3",
+  "surah": 103,
+  "wordSegments": [
+    {
+      "verseNum": 1,
+      "wordIndex": 1,
+      "start": 0.08,
+      "end": 0.95
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 1,
+      "start": 0.98,
+      "end": 3.031
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 2,
+      "start": 3.061,
+      "end": 5.613
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 3,
+      "start": 5.643,
+      "end": 6.283
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 4,
+      "start": 6.283,
+      "end": 6.713
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 1,
+      "start": 6.743,
+      "end": 8.234
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 2,
+      "start": 8.264,
+      "end": 9.234
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 3,
+      "start": 9.264,
+      "end": 10.455
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 4,
+      "start": 10.485,
+      "end": 11.365
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 5,
+      "start": 11.365,
+      "end": 12.916
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 6,
+      "start": 12.946,
+      "end": 14.257
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 7,
+      "start": 14.287,
+      "end": 15.297
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 8,
+      "start": 15.327,
+      "end": 16.708
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 9,
+      "start": 16.708,
+      "end": 17.588
+    }
+  ],
+  "segments": [
+    {
+      "verse": 1,
+      "start": 0.08,
+      "end": 0.95
+    },
+    {
+      "verse": 2,
+      "start": 0.98,
+      "end": 6.713
+    },
+    {
+      "verse": 3,
+      "start": 6.743,
+      "end": 17.588
+    }
+  ]
+}

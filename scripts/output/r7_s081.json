@@ -1,0 +1,777 @@
+{
+  "audioUrl": "https://download.quranicaudio.com/qdc/mishari_al_afasy/murattal/81.mp3",
+  "surah": 81,
+  "wordSegments": [
+    {
+      "verseNum": 1,
+      "wordIndex": 1,
+      "start": 0.1,
+      "end": 0.41
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 2,
+      "start": 0.44,
+      "end": 1.27
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 3,
+      "start": 1.3,
+      "end": 2.45
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 1,
+      "start": 2.48,
+      "end": 3.07
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 2,
+      "start": 3.1,
+      "end": 4.45
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 3,
+      "start": 4.48,
+      "end": 6.151
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 1,
+      "start": 6.181,
+      "end": 6.731
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 2,
+      "start": 6.761,
+      "end": 7.771
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 3,
+      "start": 7.801,
+      "end": 8.931
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 1,
+      "start": 8.961,
+      "end": 9.531
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 2,
+      "start": 9.561,
+      "end": 10.591
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 3,
+      "start": 10.621,
+      "end": 11.691
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 1,
+      "start": 11.721,
+      "end": 12.311
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 2,
+      "start": 12.341,
+      "end": 13.351
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 3,
+      "start": 13.381,
+      "end": 14.251
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 1,
+      "start": 14.281,
+      "end": 14.891
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 2,
+      "start": 14.921,
+      "end": 15.931
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 3,
+      "start": 15.961,
+      "end": 17.071
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 1,
+      "start": 17.101,
+      "end": 17.692
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 2,
+      "start": 17.722,
+      "end": 19.032
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 3,
+      "start": 19.062,
+      "end": 20.192
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 1,
+      "start": 20.222,
+      "end": 20.772
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 2,
+      "start": 20.802,
+      "end": 22.192
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 3,
+      "start": 22.222,
+      "end": 23.092
+    },
+    {
+      "verseNum": 9,
+      "wordIndex": 1,
+      "start": 23.122,
+      "end": 23.912
+    },
+    {
+      "verseNum": 9,
+      "wordIndex": 2,
+      "start": 23.942,
+      "end": 25.812
+    },
+    {
+      "verseNum": 9,
+      "wordIndex": 3,
+      "start": 25.842,
+      "end": 27.352
+    },
+    {
+      "verseNum": 10,
+      "wordIndex": 1,
+      "start": 27.382,
+      "end": 27.912
+    },
+    {
+      "verseNum": 10,
+      "wordIndex": 2,
+      "start": 27.942,
+      "end": 28.712
+    },
+    {
+      "verseNum": 10,
+      "wordIndex": 3,
+      "start": 28.742,
+      "end": 29.613
+    },
+    {
+      "verseNum": 11,
+      "wordIndex": 1,
+      "start": 29.643,
+      "end": 30.213
+    },
+    {
+      "verseNum": 11,
+      "wordIndex": 2,
+      "start": 30.243,
+      "end": 32.493
+    },
+    {
+      "verseNum": 11,
+      "wordIndex": 3,
+      "start": 32.523,
+      "end": 33.433
+    },
+    {
+      "verseNum": 12,
+      "wordIndex": 1,
+      "start": 33.463,
+      "end": 34.073
+    },
+    {
+      "verseNum": 12,
+      "wordIndex": 2,
+      "start": 34.103,
+      "end": 35.113
+    },
+    {
+      "verseNum": 12,
+      "wordIndex": 3,
+      "start": 35.143,
+      "end": 36.233
+    },
+    {
+      "verseNum": 13,
+      "wordIndex": 1,
+      "start": 36.263,
+      "end": 36.813
+    },
+    {
+      "verseNum": 13,
+      "wordIndex": 2,
+      "start": 36.843,
+      "end": 38.443
+    },
+    {
+      "verseNum": 13,
+      "wordIndex": 3,
+      "start": 38.443,
+      "end": 40.013
+    },
+    {
+      "verseNum": 14,
+      "wordIndex": 1,
+      "start": 40.043,
+      "end": 40.794
+    },
+    {
+      "verseNum": 14,
+      "wordIndex": 2,
+      "start": 40.824,
+      "end": 42.314
+    },
+    {
+      "verseNum": 14,
+      "wordIndex": 3,
+      "start": 42.344,
+      "end": 43.374
+    },
+    {
+      "verseNum": 14,
+      "wordIndex": 4,
+      "start": 43.404,
+      "end": 44.914
+    },
+    {
+      "verseNum": 15,
+      "wordIndex": 1,
+      "start": 44.944,
+      "end": 47.484
+    },
+    {
+      "verseNum": 15,
+      "wordIndex": 2,
+      "start": 47.484,
+      "end": 48.294
+    },
+    {
+      "verseNum": 15,
+      "wordIndex": 3,
+      "start": 48.324,
+      "end": 50.854
+    },
+    {
+      "verseNum": 16,
+      "wordIndex": 1,
+      "start": 50.884,
+      "end": 52.014
+    },
+    {
+      "verseNum": 16,
+      "wordIndex": 2,
+      "start": 52.044,
+      "end": 54.435
+    },
+    {
+      "verseNum": 17,
+      "wordIndex": 1,
+      "start": 54.465,
+      "end": 55.515
+    },
+    {
+      "verseNum": 17,
+      "wordIndex": 2,
+      "start": 55.545,
+      "end": 56.295
+    },
+    {
+      "verseNum": 17,
+      "wordIndex": 3,
+      "start": 56.325,
+      "end": 57.375
+    },
+    {
+      "verseNum": 18,
+      "wordIndex": 1,
+      "start": 57.405,
+      "end": 58.455
+    },
+    {
+      "verseNum": 18,
+      "wordIndex": 2,
+      "start": 58.485,
+      "end": 59.075
+    },
+    {
+      "verseNum": 18,
+      "wordIndex": 3,
+      "start": 59.105,
+      "end": 60.075
+    },
+    {
+      "verseNum": 19,
+      "wordIndex": 1,
+      "start": 60.105,
+      "end": 62.195
+    },
+    {
+      "verseNum": 19,
+      "wordIndex": 2,
+      "start": 62.225,
+      "end": 63.075
+    },
+    {
+      "verseNum": 19,
+      "wordIndex": 3,
+      "start": 63.105,
+      "end": 64.616
+    },
+    {
+      "verseNum": 19,
+      "wordIndex": 4,
+      "start": 64.646,
+      "end": 66.696
+    },
+    {
+      "verseNum": 20,
+      "wordIndex": 1,
+      "start": 66.726,
+      "end": 67.076
+    },
+    {
+      "verseNum": 20,
+      "wordIndex": 2,
+      "start": 67.106,
+      "end": 67.906
+    },
+    {
+      "verseNum": 20,
+      "wordIndex": 3,
+      "start": 67.906,
+      "end": 69.056
+    },
+    {
+      "verseNum": 20,
+      "wordIndex": 4,
+      "start": 69.086,
+      "end": 69.236
+    },
+    {
+      "verseNum": 20,
+      "wordIndex": 5,
+      "start": 69.266,
+      "end": 70.096
+    },
+    {
+      "verseNum": 20,
+      "wordIndex": 6,
+      "start": 70.126,
+      "end": 72.156
+    },
+    {
+      "verseNum": 21,
+      "wordIndex": 1,
+      "start": 72.186,
+      "end": 73.696
+    },
+    {
+      "verseNum": 21,
+      "wordIndex": 2,
+      "start": 73.726,
+      "end": 74.956
+    },
+    {
+      "verseNum": 21,
+      "wordIndex": 3,
+      "start": 74.986,
+      "end": 77.057
+    },
+    {
+      "verseNum": 22,
+      "wordIndex": 1,
+      "start": 77.087,
+      "end": 77.677
+    },
+    {
+      "verseNum": 22,
+      "wordIndex": 2,
+      "start": 77.707,
+      "end": 79.477
+    },
+    {
+      "verseNum": 22,
+      "wordIndex": 3,
+      "start": 79.507,
+      "end": 82.197
+    },
+    {
+      "verseNum": 23,
+      "wordIndex": 1,
+      "start": 82.227,
+      "end": 83.037
+    },
+    {
+      "verseNum": 23,
+      "wordIndex": 2,
+      "start": 83.067,
+      "end": 83.897
+    },
+    {
+      "verseNum": 23,
+      "wordIndex": 3,
+      "start": 83.927,
+      "end": 84.897
+    },
+    {
+      "verseNum": 23,
+      "wordIndex": 4,
+      "start": 84.927,
+      "end": 87.498
+    },
+    {
+      "verseNum": 24,
+      "wordIndex": 1,
+      "start": 87.528,
+      "end": 88.078
+    },
+    {
+      "verseNum": 24,
+      "wordIndex": 2,
+      "start": 88.108,
+      "end": 88.498
+    },
+    {
+      "verseNum": 24,
+      "wordIndex": 3,
+      "start": 88.528,
+      "end": 88.918
+    },
+    {
+      "verseNum": 24,
+      "wordIndex": 4,
+      "start": 88.948,
+      "end": 89.758
+    },
+    {
+      "verseNum": 24,
+      "wordIndex": 5,
+      "start": 89.788,
+      "end": 92.638
+    },
+    {
+      "verseNum": 25,
+      "wordIndex": 1,
+      "start": 92.668,
+      "end": 93.218
+    },
+    {
+      "verseNum": 25,
+      "wordIndex": 2,
+      "start": 93.248,
+      "end": 93.638
+    },
+    {
+      "verseNum": 25,
+      "wordIndex": 3,
+      "start": 93.668,
+      "end": 94.468
+    },
+    {
+      "verseNum": 25,
+      "wordIndex": 4,
+      "start": 94.468,
+      "end": 95.668
+    },
+    {
+      "verseNum": 25,
+      "wordIndex": 5,
+      "start": 95.668,
+      "end": 96.378
+    },
+    {
+      "verseNum": 26,
+      "wordIndex": 1,
+      "start": 96.408,
+      "end": 97.238
+    },
+    {
+      "verseNum": 26,
+      "wordIndex": 2,
+      "start": 97.268,
+      "end": 99.199
+    },
+    {
+      "verseNum": 27,
+      "wordIndex": 1,
+      "start": 99.229,
+      "end": 100.079
+    },
+    {
+      "verseNum": 27,
+      "wordIndex": 2,
+      "start": 100.109,
+      "end": 100.559
+    },
+    {
+      "verseNum": 27,
+      "wordIndex": 3,
+      "start": 100.589,
+      "end": 101.319
+    },
+    {
+      "verseNum": 27,
+      "wordIndex": 4,
+      "start": 101.349,
+      "end": 102.189
+    },
+    {
+      "verseNum": 27,
+      "wordIndex": 5,
+      "start": 102.189,
+      "end": 105.019
+    },
+    {
+      "verseNum": 28,
+      "wordIndex": 1,
+      "start": 105.049,
+      "end": 105.549
+    },
+    {
+      "verseNum": 28,
+      "wordIndex": 2,
+      "start": 106.569,
+      "end": 108.099
+    },
+    {
+      "verseNum": 28,
+      "wordIndex": 3,
+      "start": 108.129,
+      "end": 109.379
+    },
+    {
+      "verseNum": 28,
+      "wordIndex": 4,
+      "start": 109.409,
+      "end": 110.38
+    },
+    {
+      "verseNum": 28,
+      "wordIndex": 5,
+      "start": 110.41,
+      "end": 113.34
+    },
+    {
+      "verseNum": 29,
+      "wordIndex": 1,
+      "start": 113.37,
+      "end": 113.97
+    },
+    {
+      "verseNum": 29,
+      "wordIndex": 2,
+      "start": 113.97,
+      "end": 116.4
+    },
+    {
+      "verseNum": 29,
+      "wordIndex": 3,
+      "start": 116.43,
+      "end": 117.91
+    },
+    {
+      "verseNum": 29,
+      "wordIndex": 4,
+      "start": 117.91,
+      "end": 118.49
+    },
+    {
+      "verseNum": 29,
+      "wordIndex": 5,
+      "start": 118.49,
+      "end": 120.22
+    },
+    {
+      "verseNum": 29,
+      "wordIndex": 6,
+      "start": 120.25,
+      "end": 121.34
+    },
+    {
+      "verseNum": 29,
+      "wordIndex": 7,
+      "start": 121.37,
+      "end": 122.021
+    },
+    {
+      "verseNum": 29,
+      "wordIndex": 8,
+      "start": 122.051,
+      "end": 126.211
+    }
+  ],
+  "segments": [
+    {
+      "verse": 1,
+      "start": 0.1,
+      "end": 2.45
+    },
+    {
+      "verse": 2,
+      "start": 2.48,
+      "end": 6.151
+    },
+    {
+      "verse": 3,
+      "start": 6.181,
+      "end": 8.931
+    },
+    {
+      "verse": 4,
+      "start": 8.961,
+      "end": 11.691
+    },
+    {
+      "verse": 5,
+      "start": 11.721,
+      "end": 14.251
+    },
+    {
+      "verse": 6,
+      "start": 14.281,
+      "end": 17.071
+    },
+    {
+      "verse": 7,
+      "start": 17.101,
+      "end": 20.192
+    },
+    {
+      "verse": 8,
+      "start": 20.222,
+      "end": 23.092
+    },
+    {
+      "verse": 9,
+      "start": 23.122,
+      "end": 27.352
+    },
+    {
+      "verse": 10,
+      "start": 27.382,
+      "end": 29.613
+    },
+    {
+      "verse": 11,
+      "start": 29.643,
+      "end": 33.433
+    },
+    {
+      "verse": 12,
+      "start": 33.463,
+      "end": 36.233
+    },
+    {
+      "verse": 13,
+      "start": 36.263,
+      "end": 40.013
+    },
+    {
+      "verse": 14,
+      "start": 40.043,
+      "end": 44.914
+    },
+    {
+      "verse": 15,
+      "start": 44.944,
+      "end": 50.854
+    },
+    {
+      "verse": 16,
+      "start": 50.884,
+      "end": 54.435
+    },
+    {
+      "verse": 17,
+      "start": 54.465,
+      "end": 57.375
+    },
+    {
+      "verse": 18,
+      "start": 57.405,
+      "end": 60.075
+    },
+    {
+      "verse": 19,
+      "start": 60.105,
+      "end": 66.696
+    },
+    {
+      "verse": 20,
+      "start": 66.726,
+      "end": 72.156
+    },
+    {
+      "verse": 21,
+      "start": 72.186,
+      "end": 77.057
+    },
+    {
+      "verse": 22,
+      "start": 77.087,
+      "end": 82.197
+    },
+    {
+      "verse": 23,
+      "start": 82.227,
+      "end": 87.498
+    },
+    {
+      "verse": 24,
+      "start": 87.528,
+      "end": 92.638
+    },
+    {
+      "verse": 25,
+      "start": 92.668,
+      "end": 96.378
+    },
+    {
+      "verse": 26,
+      "start": 96.408,
+      "end": 99.199
+    },
+    {
+      "verse": 27,
+      "start": 99.229,
+      "end": 105.019
+    },
+    {
+      "verse": 28,
+      "start": 105.049,
+      "end": 113.34
+    },
+    {
+      "verse": 29,
+      "start": 113.37,
+      "end": 126.211
+    }
+  ]
+}

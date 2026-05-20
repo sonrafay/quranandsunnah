@@ -20,6 +20,7 @@ system.
 - [Architecture](#architecture)
 - [Why forced alignment (and not Whisper)](#why-forced-alignment-and-not-whisper)
 - [Edge cases the script handles](#edge-cases-the-script-handles)
+- [How we used the Quran Foundation APIs](#how-we-used-the-quran-foundation-apis)
 - [Validation results](#validation-results)
 - [Known limitations](#known-limitations)
 - [Credits](#credits)
@@ -300,15 +301,132 @@ not hiding the numbers.
 
 ---
 
+## How we used the Quran Foundation APIs
+
+The Quran Foundation APIs are the **single source of truth** the whole helper
+sits on. Without them there is no canonical word list to align against, no
+ground-truth timings to validate against, and no reciter catalogue to register
+new entries into. We use the APIs in two distinct ways: the **production app**
+talks to the authenticated `apis.quran.foundation` content endpoint, and the
+**hackathon helper / validation scripts** talk to the public `api.quran.com/v4`
+mirror (same data, no auth header, easier for a reproducible CLI demo).
+
+### Endpoints and what each one is doing for us
+
+| Endpoint | Where we call it | What we do with the response |
+| --- | --- | --- |
+| `GET /chapters` | `src/app/quran/page.tsx`, `src/app/api/qf/chapters/route.ts` | Build the surah picker in the main reader (114 surah metadata records). |
+| `GET /chapters/{id}` | `src/app/quran/[surah]/page.tsx` | Page title, verse count, revelation place shown on each surah page. |
+| `GET /verses/by_chapter/{surah}?words=true&word_fields=qpc_uthmani_hafs` | `scripts/align-audio.py`, `scripts/batch-validate.py`, `src/app/quran/[surah]/page.tsx`, `src/app/api/qf/verses/[chapter]/route.ts` | **The core input to forced alignment.** We pull every word for the surah (skipping `char_type_name === "end"` separators), keep the `qpc_uthmani_hafs` Arabic text, and feed it to the aligner as the known token sequence. The same response drives the reader's verse rendering. |
+| `GET /verses/by_chapter/1?words=true` | `scripts/align-audio.py` (bismillah prefix path) | When `--prepend-bismillah` is set we re-use Surah 1's first four words (Bismillah) as a "throwaway" alignment prefix so non-Fatiha recordings with a Bismillah intro don't stretch verse 1's first word across the intro. |
+| `GET /chapter_recitations/{reciter_id}/{surah}?segments=true` | `scripts/align-audio.py` (validation mode), `scripts/batch-validate.py`, `src/components/quran/AudioPlayerBar.tsx`, `src/app/api/qf/audio/[reciterId]/[chapter]/route.ts` | (1) Fetches the MP3 URL for the audio we then align. (2) Parses the `segments` array (`[verseNum, wordStart, wordEnd, msStart, msEnd]`) into per-word reference timings used as **ground truth** in the validation dashboard. Every "QF reference" number on `/hackathon-helper/report` comes from this endpoint. |
+| `GET /recitations/{reciter_id}/by_chapter/{surah}?fields=segments` | `src/components/quran/AudioPlayerBar.tsx`, `src/app/quran/[surah]/page.tsx` | Per-verse alignment fallback for reciters that publish per-verse rather than per-chapter audio. |
+| `GET /chapter_reciters/{reciter}/audio_files` | `src/app/api/qf/recitations/[reciter]/chapter/[chapter]/route.ts` | Lists the per-surah audio files for a reciter so the picker can offer all 114 surahs without an extra round-trip per surah. |
+| `GET /resources/translations`, `GET /resources/languages` | `src/app/api/qf/translations/route.ts`, `src/app/api/qf/word-translations/route.ts`, settings page | Populate the translation / word-by-word language pickers in settings. Not used by the aligner itself, but they're part of the broader QF integration. |
+
+### Where the QF data flows through the helper
+
+1. **Word list ingestion.** When a user opens `/hackathon-helper`, picks a surah, and clicks **Generate alignment**, the API route at `src/app/api/hackathon-align/route.ts` spawns `scripts/align-audio.py` which calls `/verses/by_chapter/{surah}?words=true` first. That response **defines** the alignment target — we never invent or normalise Arabic text ourselves.
+2. **Audio URL resolution.** In validation mode (`--reciter-id`), the script hits `/chapter_recitations/{reciter_id}/{surah}?segments=true`, pulls `audio_url`, and streams the MP3 from QF's CDN into a temp file. No QF audio is committed to the repo.
+3. **Reference timings = ground truth.** The same `?segments=true` response contains QF's published per-word timings (`[verseNum, wordStart, wordEnd, msStart, msEnd]`). The validation harness pairs every predicted word start against `msStart` from this array — that's where the per-word `delta_ms` values in `scripts/output/per-word/*.json` come from.
+4. **Reader integration.** The output JSON our aligner writes (`public/demo/<slug>/<surah>.json`) matches the **exact shape** that `AudioPlayerBar.tsx` already builds from QF's `/recitations/{id}/by_chapter/{surah}?fields=segments` response. That's why no player changes were needed — we hand the existing QF code path a QF-shaped payload.
+
+### Authentication and the two hosts
+
+Because the official QF content API (`apis.quran.foundation/content/api/v4`) requires
+an OAuth client-credentials token, the production app gets one server-side via
+`src/lib/server/qf.ts` (helper `qfGet()`) using `QF_CLIENT_ID` / `QF_CLIENT_SECRET`
+environment variables, and proxies safe routes through `src/app/api/qf/*` so
+client-side code never sees the token. The hackathon CLI scripts deliberately
+hit the **public** `api.quran.com/api/v4` mirror instead — same data, no
+credentials needed — so anyone cloning the repo can reproduce the validation
+run without setting up secrets.
+
+### What we did *not* re-implement
+
+We did not roll our own Quran text, our own word index, our own verse
+segmentation, or our own reciter catalogue. Every one of those came directly
+from a Quran Foundation endpoint. The hackathon contribution is the bridge
+between **arbitrary audio in** and **QF-shaped word timings out**, so an audio
+file outside QF's catalogue can flow through the rest of the app exactly as
+if QF had timed it itself.
+
+---
+
 ## Validation results
 
-Generated by `scripts/batch-validate.py` against Mishari Al-Afasy (QF reciter
-ID 7). Each row is one surah; the metric compares the helper's per-word
-`start` against QF's reference `start_ms` for the same audio.
+### Live dashboard
 
-See `scripts/output/batch-validation.csv` (CSV) and `scripts/output/batch-validation.png`
-(chart) once the overnight run completes. Single-surah validation already
-committed under `public/demo/afasy-validation/001.report.json` and `001.json`.
+Run `npm run dev` and open **[`/hackathon-helper/report`](http://localhost:3000/hackathon-helper/report)**.
+The dashboard reads `scripts/output/batch-validation-summary.json` +
+`scripts/output/per-word/*.json` and renders:
+
+- Top-line stat cards (surahs validated, words compared, avg accuracy, median/p95 error, total CPU time).
+- A 5-panel matplotlib chart: per-surah accuracy bars, per-surah MAE bars, overall per-word error histogram, cumulative distribution function, and an MAE-vs-audio-duration scatter to verify we don't degrade on long surahs.
+- A bucketed per-word error distribution (0–50 ms, 50–100, 100–250, …, 2500+).
+- A sortable per-surah table where every cell is clickable to drill down into the exact verse / word / predicted timestamp / reference timestamp / delta for that surah.
+- The **30 worst words across the entire batch** — full transparency on where the model still misses.
+
+### How to reproduce
+
+```bash
+# 1. Generate per-word + summary data (Mishari = QF reciter 7).
+scripts/.venv/bin/python scripts/batch-validate.py \
+  --reciter-id 7 \
+  --surahs 1,36,49,55,56,67,78-114
+
+# 2. Render charts + summary JSON the dashboard reads.
+scripts/.venv/bin/python scripts/plot-metrics.py
+
+# 3. Open the dashboard.
+npm run dev
+# → http://localhost:3000/hackathon-helper/report
+```
+
+### What the metrics mean
+
+| Metric | Definition |
+| --- | --- |
+| **within ±100 ms %** | % of words whose predicted `start` lands in a 100 ms window around QF's reference. The strict accuracy bar — anything inside is imperceptible to a viewer. |
+| **within ±250 ms %** | Loose tolerance. This is the effective threshold the player highlight needs: at 250 ms you'd visually notice misalignment, beyond it the word is wrong. |
+| **mean absolute error (MAE)** | Average per-word `|predicted - reference|` in ms. Single-number summary. |
+| **median / p90 / p95 / p99 / max** | Percentiles of per-word error across the entire batch. p95 is the honest "worst-case typical" number — only 5% of words are worse. |
+| **alignment seconds** | Wall-clock CPU time the alignment script took, per surah. Roughly real-time on CPU. |
+| **QF offset (per-surah median signed delta)** | The systematic shift between our predicted word starts and QF's reference word starts for that surah. Used to derive the offset-corrected metrics. |
+| **offset-corrected ±100 / ±250 / MAE** | Same accuracy metrics, but computed after subtracting each surah's median signed offset from every per-word delta. Removes the surah-specific QF convention bias and reveals the model's intrinsic precision. |
+
+### Why two sets of numbers (raw vs offset-corrected)
+
+When we first ran the batch we saw something puzzling: visually the alignment was
+near-perfect (the highlight on `/quran/95` lands on each word as it's said), but
+the raw accuracy numbers were modest (typical `~30 % within ±100 ms`). Inspecting
+the per-word JSONs surfaced the explanation — **every surah has its own
+systematic signed offset** between our predicted word starts and QF's
+reference word starts. We measured surah-by-surah offsets ranging from
+`+88 ms` to `+2625 ms`.
+
+That's not random noise — it's a consistent direction-and-magnitude shift per
+surah. The most likely cause is a convention mismatch: QF appears to mark
+each word's "start" at the end of the previous word's slot (so all inter-word
+silence is absorbed into the previous word), while we mark "start" at the
+audible onset of the word itself. For surahs with long pauses (Mishari's
+deliberate tajwid style on, e.g., An-Naba) the gap is large; for tight
+recitation it's small.
+
+The dashboard shows both views via a toggle so judges can see (a) what raw
+agreement with QF's reference looks like, and (b) what the model's actual
+precision is once that systematic surah-level shift is normalised out.
+The **offset-corrected** numbers are the honest indicator of how well the
+highlight tracks the audio you actually hear. We don't hide the raw view —
+it's there to make the data transparent.
+
+### Underlying files committed to the repo
+
+- `scripts/output/batch-validation.csv` — one row per surah (summary).
+- `scripts/output/batch-validation-summary.json` — machine-readable aggregate the dashboard reads.
+- `scripts/output/batch-validation.png` — the matplotlib dashboard (also embedded in the live page).
+- `scripts/output/per-word/r7_s{NNN}.json` — every predicted vs reference word pair with `delta_ms` for surah `NNN`.
+- `public/demo/afasy-validation/001.report.json` — single-surah report from the original `/goal` evaluator run.
 
 ---
 

@@ -1,0 +1,130 @@
+{
+  "audioUrl": "https://download.quranicaudio.com/qdc/mishari_al_afasy/murattal/106.mp3",
+  "surah": 106,
+  "wordSegments": [
+    {
+      "verseNum": 1,
+      "wordIndex": 1,
+      "start": 0.06,
+      "end": 1.271
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 2,
+      "start": 1.301,
+      "end": 4.673
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 1,
+      "start": 4.703,
+      "end": 6.134
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 2,
+      "start": 6.164,
+      "end": 6.915
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 3,
+      "start": 6.945,
+      "end": 9.536
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 4,
+      "start": 9.566,
+      "end": 13.539
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 1,
+      "start": 13.569,
+      "end": 15.01
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 2,
+      "start": 15.01,
+      "end": 15.6
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 3,
+      "start": 15.63,
+      "end": 16.261
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 4,
+      "start": 16.291,
+      "end": 19.543
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 1,
+      "start": 19.573,
+      "end": 22.034
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 2,
+      "start": 22.034,
+      "end": 23.705
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 3,
+      "start": 23.735,
+      "end": 24.906
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 4,
+      "start": 24.936,
+      "end": 26.627
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 5,
+      "start": 26.657,
+      "end": 28.909
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 6,
+      "start": 28.939,
+      "end": 29.369
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 7,
+      "start": 29.399,
+      "end": 32.361
+    }
+  ],
+  "segments": [
+    {
+      "verse": 1,
+      "start": 0.06,
+      "end": 4.673
+    },
+    {
+      "verse": 2,
+      "start": 4.703,
+      "end": 13.539
+    },
+    {
+      "verse": 3,
+      "start": 13.569,
+      "end": 19.543
+    },
+    {
+      "verse": 4,
+      "start": 19.573,
+      "end": 32.361
+    }
+  ]
+}

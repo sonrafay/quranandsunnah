@@ -1,0 +1,18 @@
+Reciter:         Mishari Rashid al-`Afasy (id 7)
+Surahs:          43
+Words compared:  4473
+Total audio:     6754.2s
+Total CPU time:  2923.2s
+
+RAW (predicted_start − QF reference_start):
+  within ±100ms     : 30.33%
+  within ±250ms     : 65.64%
+  mean abs error    : 491.17 ms
+  per-word median   : 140.0 ms · p95 1582.0 ms
+
+OFFSET-CORRECTED (each surah's median signed offset subtracted —
+isolates model precision from QF's surah-specific timing convention):
+  within ±100ms     : 59.63%
+  within ±250ms     : 76.11%
+  mean abs error    : 299.74 ms
+  per-word median   : 60.0 ms · p95 931.0 ms

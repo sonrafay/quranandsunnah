@@ -1,0 +1,158 @@
+{
+  "audioUrl": "https://download.quranicaudio.com/qdc/mishari_al_afasy/murattal/114.mp3",
+  "surah": 114,
+  "wordSegments": [
+    {
+      "verseNum": 1,
+      "wordIndex": 1,
+      "start": 0.04,
+      "end": 0.41
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 2,
+      "start": 0.44,
+      "end": 1.19
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 3,
+      "start": 1.22,
+      "end": 1.991
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 4,
+      "start": 2.021,
+      "end": 6.072
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 1,
+      "start": 6.102,
+      "end": 6.673
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 2,
+      "start": 6.703,
+      "end": 10.914
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 1,
+      "start": 10.944,
+      "end": 12.195
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 2,
+      "start": 12.225,
+      "end": 16.797
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 1,
+      "start": 16.827,
+      "end": 17.107
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 2,
+      "start": 18.247,
+      "end": 18.818
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 3,
+      "start": 18.848,
+      "end": 20.098
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 4,
+      "start": 20.128,
+      "end": 24.8
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 1,
+      "start": 24.83,
+      "end": 25.51
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 2,
+      "start": 25.51,
+      "end": 26.861
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 3,
+      "start": 26.891,
+      "end": 27.311
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 4,
+      "start": 27.311,
+      "end": 28.101
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 5,
+      "start": 28.131,
+      "end": 32.723
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 1,
+      "start": 32.753,
+      "end": 33.043
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 2,
+      "start": 33.073,
+      "end": 35.264
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 3,
+      "start": 35.294,
+      "end": 40.056
+    }
+  ],
+  "segments": [
+    {
+      "verse": 1,
+      "start": 0.04,
+      "end": 6.072
+    },
+    {
+      "verse": 2,
+      "start": 6.102,
+      "end": 10.914
+    },
+    {
+      "verse": 3,
+      "start": 10.944,
+      "end": 16.797
+    },
+    {
+      "verse": 4,
+      "start": 16.827,
+      "end": 24.8
+    },
+    {
+      "verse": 5,
+      "start": 24.83,
+      "end": 32.723
+    },
+    {
+      "verse": 6,
+      "start": 32.753,
+      "end": 40.056
+    }
+  ]
+}

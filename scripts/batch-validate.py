@@ -34,6 +34,7 @@ SCRIPT_DIR = REPO_ROOT / "scripts"
 ALIGN_SCRIPT = SCRIPT_DIR / "align-audio.py"
 PYTHON_BIN = SCRIPT_DIR / ".venv" / "bin" / "python"
 OUTPUT_DIR = SCRIPT_DIR / "output"
+PER_WORD_DIR = OUTPUT_DIR / "per-word"
 DEFAULT_CSV = OUTPUT_DIR / "batch-validation.csv"
 
 QURAN_COM_BASE = "https://api.quran.com/api/v4"
@@ -73,6 +74,124 @@ def fetch_audio_duration_sec(reciter_id: int, surah: int) -> float | None:
         return None
 
 
+def fetch_qf_reference_word_timings(reciter_id: int, surah: int) -> list[dict]:
+    """Return list of {verseNum, wordIndex, start_ms, end_ms} from QF.
+
+    Mirrors the segment-parsing logic in align-audio.py so the deltas we
+    compute here use exactly the same reference frame the script does at
+    runtime.
+    """
+    url = f"{QURAN_COM_BASE}/chapter_recitations/{reciter_id}/{surah}?segments=true"
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = json.loads(r.read())
+    except Exception:
+        return []
+
+    out: list[dict] = []
+    for ts in (data.get("audio_file", {}).get("timestamps") or []):
+        verse_key = ts.get("verse_key") or ""
+        parts = verse_key.split(":")
+        if len(parts) != 2:
+            continue
+        try:
+            ayah = int(parts[1])
+        except ValueError:
+            continue
+        for seg in (ts.get("segments") or []):
+            nums = [int(x) for x in seg if isinstance(x, (int, float))]
+            if len(nums) < 3:
+                continue
+            if len(nums) >= 4:
+                _, word_idx, start_ms, end_ms = nums[0], nums[1], nums[2], nums[3]
+            else:
+                word_idx, start_ms, end_ms = nums[0], nums[1], nums[2]
+            out.append({
+                "verseNum": ayah,
+                "wordIndex": max(1, int(word_idx)),
+                "start_ms": int(start_ms),
+                "end_ms": int(end_ms),
+            })
+    return out
+
+
+def compute_per_word_deltas(predicted_path: Path, reference: list[dict]) -> dict:
+    """Pair predicted word segments with reference timings; return a payload
+    with every delta_ms plus aggregate stats."""
+    try:
+        with predicted_path.open() as f:
+            pred = json.load(f)
+    except Exception as e:
+        return {"error": f"failed to load predicted: {e}"}
+
+    predicted_words = pred.get("wordSegments", []) or []
+    ref_by_key = {(r["verseNum"], r["wordIndex"]): r for r in reference}
+
+    pairs: list[dict] = []
+    matched = 0
+    for p in predicted_words:
+        key = (p["verseNum"], p["wordIndex"])
+        ref = ref_by_key.get(key)
+        if ref is None:
+            pairs.append({
+                "verseNum": p["verseNum"],
+                "wordIndex": p["wordIndex"],
+                "predicted_start": round(p["start"], 3),
+                "predicted_end": round(p["end"], 3),
+                "reference_start_ms": None,
+                "reference_end_ms": None,
+                "delta_ms": None,
+            })
+            continue
+        delta_ms = abs(p["start"] * 1000.0 - ref["start_ms"])
+        matched += 1
+        pairs.append({
+            "verseNum": p["verseNum"],
+            "wordIndex": p["wordIndex"],
+            "predicted_start": round(p["start"], 3),
+            "predicted_end": round(p["end"], 3),
+            "reference_start_ms": ref["start_ms"],
+            "reference_end_ms": ref["end_ms"],
+            "delta_ms": round(delta_ms, 1),
+        })
+
+    deltas = [pair["delta_ms"] for pair in pairs if pair["delta_ms"] is not None]
+    deltas_sorted = sorted(deltas)
+
+    def pct(values: list[float], p: float) -> float | None:
+        if not values:
+            return None
+        k = max(0, min(len(values) - 1, int(round((p / 100.0) * (len(values) - 1)))))
+        return round(values[k], 1)
+
+    return {
+        "matched": matched,
+        "predicted_total": len(predicted_words),
+        "reference_total": len(reference),
+        "delta_stats": {
+            "count": len(deltas),
+            "min_ms": round(min(deltas), 1) if deltas else None,
+            "median_ms": pct(deltas_sorted, 50),
+            "p90_ms": pct(deltas_sorted, 90),
+            "p95_ms": pct(deltas_sorted, 95),
+            "p99_ms": pct(deltas_sorted, 99),
+            "max_ms": round(max(deltas), 1) if deltas else None,
+            "mean_ms": round(sum(deltas) / len(deltas), 1) if deltas else None,
+        },
+        "pairs": pairs,
+    }
+
+
+def dump_per_word(reciter_id: int, surah: int, payload: dict) -> Path:
+    PER_WORD_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = PER_WORD_DIR / f"r{reciter_id}_s{surah:03d}.json"
+    payload_with_meta = {"reciter_id": reciter_id, "surah": surah, **payload}
+    with out_path.open("w") as f:
+        json.dump(payload_with_meta, f, indent=2)
+    return out_path
+
+
 def already_done(csv_path: Path, reciter_id: int, surah: int) -> bool:
     if not csv_path.exists():
         return False
@@ -87,8 +206,8 @@ def already_done(csv_path: Path, reciter_id: int, surah: int) -> bool:
     return False
 
 
-def run_alignment_for_surah(reciter_id: int, surah: int) -> tuple[dict | None, float, str, str]:
-    """Run align-audio.py for one surah; return (metrics, elapsed_sec, status, notes)."""
+def run_alignment_for_surah(reciter_id: int, surah: int) -> tuple[dict | None, float, str, str, Path | None]:
+    """Run align-audio.py for one surah; return (metrics, elapsed_sec, status, notes, predicted_path)."""
     out_json = OUTPUT_DIR / f"r{reciter_id}_s{surah:03d}.json"
     out_json.parent.mkdir(parents=True, exist_ok=True)
 
@@ -106,21 +225,21 @@ def run_alignment_for_surah(reciter_id: int, surah: int) -> tuple[dict | None, f
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,
-            timeout=60 * 60,  # 1 hour per surah ceiling
+            timeout=60 * 60 * 2,  # 2h ceiling — long surahs (Baqarah/Al-Imran) need it
         )
     except subprocess.TimeoutExpired:
-        return None, time.time() - started, "timeout", "1h ceiling hit"
+        return None, time.time() - started, "timeout", "2h ceiling hit", None
     elapsed = time.time() - started
 
     combined = (result.stdout or "") + "\n" + (result.stderr or "")
     if result.returncode != 0:
         # Trim long script tracebacks to something CSV-friendly.
         notes = (result.stderr or "")[-300:].replace("\n", " | ").strip()
-        return None, elapsed, "fail", notes or f"exit {result.returncode}"
+        return None, elapsed, "fail", notes or f"exit {result.returncode}", None
 
     match = VALIDATION_LINE_RE.search(combined)
     if not match:
-        return None, elapsed, "no_validation_line", "[VALIDATION] line not found in output"
+        return None, elapsed, "no_validation_line", "[VALIDATION] line not found in output", out_json if out_json.exists() else None
 
     metrics = {
         "words_compared": int(match.group("words")),
@@ -128,7 +247,7 @@ def run_alignment_for_surah(reciter_id: int, surah: int) -> tuple[dict | None, f
         "within_250ms_pct": float(match.group("p250")),
         "mean_abs_error_ms": float(match.group("mae")),
     }
-    return metrics, elapsed, "ok", ""
+    return metrics, elapsed, "ok", "", out_json
 
 
 def append_row(csv_path: Path, row: dict) -> None:
@@ -189,7 +308,7 @@ def main() -> int:
             continue
 
         duration = fetch_audio_duration_sec(args.reciter_id, surah)
-        metrics, elapsed, status, notes = run_alignment_for_surah(args.reciter_id, surah)
+        metrics, elapsed, status, notes, predicted_path = run_alignment_for_surah(args.reciter_id, surah)
 
         row = {
             "surah": surah,
@@ -202,6 +321,14 @@ def main() -> int:
         if metrics:
             row.update(metrics)
         append_row(csv_path, row)
+
+        # If alignment succeeded, dump per-word predicted/reference/delta detail
+        # so the dashboard can show exact timings, not just summaries.
+        if status == "ok" and predicted_path is not None:
+            reference = fetch_qf_reference_word_timings(args.reciter_id, surah)
+            payload = compute_per_word_deltas(predicted_path, reference)
+            per_word_path = dump_per_word(args.reciter_id, surah, payload)
+            print(f"  ↳ per-word: {per_word_path.relative_to(REPO_ROOT)}", flush=True)
 
         if metrics:
             print(
