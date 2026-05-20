@@ -2,11 +2,12 @@
 "use client";
 
 import { db } from "@/lib/firebase";
-import type { PrivacySettings, FriendProfile, AvatarBorderTier } from "@/lib/account/models";
+import type { PrivacySettings, FriendProfile, FriendRelationship, AvatarBorderTier } from "@/lib/account/models";
 import {
   doc, setDoc, serverTimestamp, collection, deleteDoc,
   onSnapshot, query, where, getDocs, orderBy, Timestamp,
-  getDoc, updateDoc, deleteField, arrayUnion, arrayRemove, limit as fsLimit
+  getDoc, updateDoc, deleteField, arrayUnion, arrayRemove, limit as fsLimit,
+  writeBatch
 } from "firebase/firestore";
 
 import {
@@ -622,7 +623,7 @@ export async function sendFriendRequest(
   return { success: true };
 }
 
-// Accept a friend request
+// Accept a friend request (atomic batch write)
 export async function acceptFriendRequest(
   uid: string,
   fromUid: string
@@ -635,21 +636,27 @@ export async function acceptFriendRequest(
   }
 
   const now = serverTimestamp();
+  const batch = writeBatch(db);
 
-  // Add to both users' friends lists
-  await setDoc(doc(db, "users", uid, "friends", fromUid), {
+  // 1. Add to current user's friends list
+  batch.set(doc(db, "users", uid, "friends", fromUid), {
     friendUid: fromUid,
     createdAt: now,
   });
 
-  await setDoc(doc(db, "users", fromUid, "friends", uid), {
+  // 2. Add to requester's friends list
+  batch.set(doc(db, "users", fromUid, "friends", uid), {
     friendUid: uid,
     createdAt: now,
   });
 
-  // Remove the request documents
-  await deleteDoc(incomingRef);
-  await deleteDoc(doc(db, "users", fromUid, "friendRequestsOutgoing", uid));
+  // 3. Remove from current user's incoming requests
+  batch.delete(incomingRef);
+
+  // 4. Remove from requester's outgoing requests
+  batch.delete(doc(db, "users", fromUid, "friendRequestsOutgoing", uid));
+
+  await batch.commit();
 
   return { success: true };
 }
@@ -880,4 +887,36 @@ export function onFriendsList(
     }));
     cb(friends);
   });
+}
+
+// Listen to outgoing friend requests (real-time)
+export function onOutgoingFriendRequests(
+  uid: string,
+  cb: (requests: Array<{ toUid: string; createdAt: Timestamp }>) => void
+) {
+  const q = query(
+    collection(db, "users", uid, "friendRequestsOutgoing"),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snap) => {
+    const requests = snap.docs.map((d) => ({
+      toUid: d.data().toUid || d.id,
+      createdAt: d.data().createdAt,
+    }));
+    cb(requests);
+  });
+}
+
+// Fetch profile for a user (helper for real-time listeners)
+export async function fetchUserProfile(uid: string): Promise<FriendProfile | undefined> {
+  const profileDoc = await getUserProfile(uid);
+  if (!profileDoc) return undefined;
+  return {
+    uid,
+    displayName: profileDoc.displayName || "User",
+    handle: profileDoc.handle,
+    publicId: profileDoc.publicId,
+    avatarIconId: profileDoc.avatarIconId,
+    avatarBorderTier: profileDoc.avatarBorderTier as AvatarBorderTier | undefined,
+  };
 }

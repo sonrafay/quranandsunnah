@@ -1,0 +1,11 @@
+# Pin pytorch CPU wheels (use --index-url https://download.pytorch.org/whl/cpu when installing torch).
+# Versions reflect what was tested; loosen as needed.
+torch>=2.4
+torchaudio>=2.4
+transformers>=4.40
+numpy>=1.26
+librosa>=0.10
+soundfile>=0.12
+requests>=2.31
+sentencepiece>=0.2
+uroman>=1.3

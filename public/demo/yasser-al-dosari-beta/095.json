@@ -1,0 +1,264 @@
+{
+  "audioUrl": "/demo/yasser-al-dosari-beta/095.mp3",
+  "surah": 95,
+  "wordSegments": [
+    {
+      "verseNum": 1,
+      "wordIndex": 1,
+      "start": 49.79,
+      "end": 50.74
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 2,
+      "start": 50.77,
+      "end": 53.821
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 1,
+      "start": 53.871,
+      "end": 54.821
+    },
+    {
+      "verseNum": 1,
+      "wordIndex": 2,
+      "start": 54.851,
+      "end": 57.902
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 1,
+      "start": 57.932,
+      "end": 58.752
+    },
+    {
+      "verseNum": 2,
+      "wordIndex": 2,
+      "start": 58.752,
+      "end": 61.643
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 1,
+      "start": 61.673,
+      "end": 62.423
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 2,
+      "start": 62.453,
+      "end": 63.273
+    },
+    {
+      "verseNum": 3,
+      "wordIndex": 3,
+      "start": 63.273,
+      "end": 65.903
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 1,
+      "start": 65.933,
+      "end": 66.664
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 2,
+      "start": 66.694,
+      "end": 67.444
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 3,
+      "start": 67.474,
+      "end": 69.324
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 4,
+      "start": 69.354,
+      "end": 69.764
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 5,
+      "start": 69.794,
+      "end": 70.484
+    },
+    {
+      "verseNum": 4,
+      "wordIndex": 6,
+      "start": 70.514,
+      "end": 72.605
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 1,
+      "start": 72.635,
+      "end": 73.885
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 2,
+      "start": 73.915,
+      "end": 75.065
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 3,
+      "start": 75.095,
+      "end": 75.885
+    },
+    {
+      "verseNum": 5,
+      "wordIndex": 4,
+      "start": 75.915,
+      "end": 78.046
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 1,
+      "start": 78.076,
+      "end": 79.026
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 2,
+      "start": 79.056,
+      "end": 79.946
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 3,
+      "start": 79.976,
+      "end": 80.886
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 4,
+      "start": 80.916,
+      "end": 81.677
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 5,
+      "start": 81.677,
+      "end": 83.007
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 6,
+      "start": 83.037,
+      "end": 83.827
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 7,
+      "start": 83.857,
+      "end": 84.547
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 8,
+      "start": 84.577,
+      "end": 85.147
+    },
+    {
+      "verseNum": 6,
+      "wordIndex": 9,
+      "start": 85.177,
+      "end": 88.208
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 1,
+      "start": 88.238,
+      "end": 88.758
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 2,
+      "start": 88.758,
+      "end": 90.108
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 3,
+      "start": 90.138,
+      "end": 90.728
+    },
+    {
+      "verseNum": 7,
+      "wordIndex": 4,
+      "start": 90.758,
+      "end": 93.969
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 1,
+      "start": 93.999,
+      "end": 95.269
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 2,
+      "start": 95.299,
+      "end": 96.35
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 3,
+      "start": 96.38,
+      "end": 97.59
+    },
+    {
+      "verseNum": 8,
+      "wordIndex": 4,
+      "start": 97.62,
+      "end": 101.601
+    }
+  ],
+  "segments": [
+    {
+      "verse": 1,
+      "start": 49.79,
+      "end": 57.902
+    },
+    {
+      "verse": 2,
+      "start": 57.932,
+      "end": 61.643
+    },
+    {
+      "verse": 3,
+      "start": 61.673,
+      "end": 65.903
+    },
+    {
+      "verse": 4,
+      "start": 65.933,
+      "end": 72.605
+    },
+    {
+      "verse": 5,
+      "start": 72.635,
+      "end": 78.046
+    },
+    {
+      "verse": 6,
+      "start": 78.076,
+      "end": 88.208
+    },
+    {
+      "verse": 7,
+      "start": 88.238,
+      "end": 93.969
+    },
+    {
+      "verse": 8,
+      "start": 93.999,
+      "end": 101.601
+    }
+  ]
+}

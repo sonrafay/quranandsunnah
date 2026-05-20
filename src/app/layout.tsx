@@ -11,7 +11,9 @@ import AppOpenTracker from "@/components/AppOpenTracker";
 
 import { ToasterProvider } from "@/components/ui/toaster";
 import ClientNotifications from "@/components/notifications/ClientNotifications";
+import FriendRequestBanner from "@/components/friends/FriendRequestBanner";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -44,10 +46,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Navigation />
                 {/* Client-side notifications runtime (permission + future scheduling hooks) */}
                 <ClientNotifications />
+                {/* Friend request notification banner */}
+                <FriendRequestBanner />
                 {children}
               </div>
             </ToasterProvider>
             <Analytics />
+            <SpeedInsights />
           </AuthProvider>
         </ThemeProvider>
       </body>
