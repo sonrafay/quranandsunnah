@@ -16,7 +16,11 @@ import { loadDemoRegistry } from "@/lib/demoRegistry.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 600; // align-audio.py can take minutes on CPU
+// Vercel Hobby plan caps maxDuration at 300s. Alignment is meant to run
+// locally (no Python/ffmpeg/yt-dlp on serverless) — the deployed endpoint
+// will error out, but the rest of /hackathon-helper (pre-baked demos +
+// /report dashboard) works fine on Vercel.
+export const maxDuration = 300;
 
 const REPO_ROOT = process.cwd();
 const PYTHON_BIN = path.join(REPO_ROOT, "scripts", ".venv", "bin", "python");
